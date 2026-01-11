@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-const API_URL = "https://resumatch-cm7x.onrender.com";
+const VITE_API_URL = "https://resumatch-cm7x.onrender.com";
 
 function App() {
   const [resume, setResume] = useState('');
