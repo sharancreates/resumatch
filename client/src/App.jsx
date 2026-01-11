@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 function App() {
@@ -6,7 +6,11 @@ function App() {
   const [job, setJob] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false); // New state for PDF upload
   const [serverStatus, setServerStatus] = useState("Checking...");
+  
+  // Ref for the hidden file input
+  const fileInputRef = useRef(null);
 
   // Health Check on Load
   useEffect(() => {
@@ -38,6 +42,39 @@ function App() {
     }
   };
 
+  // NEW: Handle PDF Upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert("Please upload a PDF file.");
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/api/parse-pdf', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // Auto-fill the resume text area
+      setResume(response.data.text);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Failed to parse PDF. Please copy-paste text manually.");
+    } finally {
+      setUploading(false);
+      // Reset input so user can upload same file again if needed
+      if (fileInputRef.current) fileInputRef.current.value = ""; 
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
       <div className="max-w-6xl mx-auto">
@@ -57,16 +94,47 @@ function App() {
           
           {/* LEFT: Inputs */}
           <div className="space-y-6">
+            
+            {/* Resume Section */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-              <label className="block text-sm font-bold text-gray-700 mb-2">1. Your Resume</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-bold text-gray-700">1. Your Resume</label>
+                
+                {/* PDF Upload Button */}
+                <div className="relative">
+                  <input 
+                    type="file" 
+                    accept=".pdf" 
+                    onChange={handleFileUpload}
+                    ref={fileInputRef}
+                    className="hidden" 
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current.click()}
+                    disabled={uploading}
+                    className="text-xs flex items-center gap-1 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-semibold"
+                  >
+                    {uploading ? (
+                      <span>Parsing PDF...</span>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Upload PDF
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
               <textarea 
                 className="w-full h-48 p-3 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
-                placeholder="Paste your full resume text here..."
+                placeholder="Paste text or upload PDF..."
                 value={resume}
                 onChange={(e) => setResume(e.target.value)}
               />
             </div>
             
+            {/* Job Section */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
               <label className="block text-sm font-bold text-gray-700 mb-2">2. Job Description</label>
               <textarea 
@@ -156,12 +224,6 @@ function App() {
                         </span>
                       ))}
                     </div>
-                  )}
-                  
-                  {result.missing.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-3 italic">
-                      * Try adding these words naturally to your resume to improve your ATS score.
-                    </p>
                   )}
                 </div>
 
