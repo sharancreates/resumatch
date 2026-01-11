@@ -19,8 +19,17 @@ except LookupError:
 
 stemmer = PorterStemmer()
 STOP_WORDS = set(stopwords.words('english'))
-semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+print("AI Engine initialized (Lazy Loading Mode)")
+semantic_model = None 
 embedding_cache = {}
+
+def get_model():
+    global semantic_model
+    if semantic_model is None:
+        print("Loading SentenceTransformer Model (First Run)...")
+        semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return semantic_model
 
 def safe_float(value):
     try:
@@ -31,12 +40,11 @@ def safe_float(value):
 def clean_and_tokenize(text_input):
     if not text_input:
         return []
-    cleaned = re.sub(r'[^a-zA-Z0-9]', ' ', text_input).lower() #remove spl chars
+    cleaned = re.sub(r'[^a-zA-Z0-9]', ' ', text_input).lower()
     tokens = word_tokenize(cleaned)
     return [stemmer.stem(word) for word in tokens if word not in STOP_WORDS]
 
 def get_weighted_embedding(text):
-    #chunks text -> encodes -> averages vectors
     key = hashlib.md5(text.encode('utf-8')).hexdigest()
     if key in embedding_cache:
         return embedding_cache[key]
@@ -47,7 +55,8 @@ def get_weighted_embedding(text):
     if not chunks:
         return np.zeros(384)
 
-    chunk_embeddings = semantic_model.encode(chunks, convert_to_numpy=True)
+    model = get_model()
+    chunk_embeddings = model.encode(chunks, convert_to_numpy=True)
     final_embedding = np.mean(chunk_embeddings, axis=0)
     
     embedding_cache[key] = final_embedding
