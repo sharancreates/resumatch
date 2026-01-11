@@ -18,7 +18,16 @@ except LookupError:
     nltk.download('punkt_tab')
 
 stemmer = PorterStemmer()
-STOP_WORDS = set(stopwords.words('english'))
+nltk_stopwords = set(stopwords.words('english'))
+
+CUSTOM_IGNORE = {
+    "job", "title", "description", "requirements", "summary", "experience",
+    "looking", "seeking", "ideal", "candidate", "must", "have", "skills",
+    "ensure", "ensuring", "high", "ability", "work", "responsibilities",
+    "duties", "role", "position", "year", "years", "plus", "strong", "knowledge"
+}
+
+STOP_WORDS = nltk_stopwords.union(CUSTOM_IGNORE)
 
 print("AI Engine initialized (Lazy Loading Mode)")
 semantic_model = None 
