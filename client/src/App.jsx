@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
 function App() {
   const [resume, setResume] = useState('');
@@ -14,7 +15,7 @@ function App() {
 
   // Health Check on Load
   useEffect(() => {
-    axios.get('http://127.0.0.1:5000/api/health')
+    axios.get(`${API_URL}/api/health`)
       .then(res => setServerStatus(res.data.status === "alive" ? "Online 🟢" : "Offline 🔴"))
       .catch(() => setServerStatus("Offline 🔴"));
   }, []);
