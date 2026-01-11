@@ -12,17 +12,16 @@ function App() {
   const [uploading, setUploading] = useState(false);
   const [serverStatus, setServerStatus] = useState("Checking...");
   
-  // DARK MODE STATE
-  // Check localStorage first, otherwise default to false (Light Mode)
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
+const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   
   const fileInputRef = useRef(null);
 
-  // --- EFFECTS ---
-
-  // 1. Handle Dark Mode Class on <html> tag
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
