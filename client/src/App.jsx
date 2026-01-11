@@ -1,20 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-const VITE_API_URL = "https://resumatch-cm7x.onrender.com";
+
+// 1. DEFINE THE URL CORRECTLY
+const API_URL = "https://resumatch-cm7x.onrender.com";
 
 function App() {
   const [resume, setResume] = useState('');
   const [job, setJob] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false); // New state for PDF upload
+  const [uploading, setUploading] = useState(false);
   const [serverStatus, setServerStatus] = useState("Checking...");
   
-  // Ref for the hidden file input
   const fileInputRef = useRef(null);
 
-  // Health Check on Load
+  // Health Check
   useEffect(() => {
+    // 2. USE THE VARIABLE (Fixed ReferenceError)
     axios.get(`${API_URL}/api/health`)
       .then(res => setServerStatus(res.data.status === "alive" ? "Online 🟢" : "Offline 🔴"))
       .catch(() => setServerStatus("Offline 🔴"));
@@ -30,7 +32,8 @@ function App() {
     setResult(null); 
     
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/analyze', {
+      // 3. REPLACED 127.0.0.1 WITH API_URL VARIABLE
+      const response = await axios.post(`${API_URL}/api/analyze`, {
         resume: resume,
         job: job
       });
@@ -43,7 +46,6 @@ function App() {
     }
   };
 
-  // NEW: Handle PDF Upload
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -58,20 +60,19 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/parse-pdf', formData, {
+      // 4. REPLACED 127.0.0.1 WITH API_URL VARIABLE
+      const response = await axios.post(`${API_URL}/api/parse-pdf`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      // Auto-fill the resume text area
       setResume(response.data.text);
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to parse PDF. Please copy-paste text manually.");
     } finally {
       setUploading(false);
-      // Reset input so user can upload same file again if needed
       if (fileInputRef.current) fileInputRef.current.value = ""; 
     }
   };
