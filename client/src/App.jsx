@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// --- CONFIG ---
-const API_URL = "https://resumatch-cm7x.onrender.com"; // Your Render Backend URL
+const API_URL = "https://resumatch-cm7x.onrender.com"; 
 
 function App() {
   const [resume, setResume] = useState('');
@@ -32,14 +31,11 @@ const [darkMode, setDarkMode] = useState(() => {
     }
   }, [darkMode]);
 
-  // 2. Health Check
   useEffect(() => {
     axios.get(`${API_URL}/api/health`)
       .then(res => setServerStatus(res.data.status === "alive" ? "Online 🟢" : "Offline 🔴"))
       .catch(() => setServerStatus("Offline 🔴"));
   }, []);
-
-  // --- HANDLERS ---
 
   const handleAnalyze = async () => {
     if (!resume.trim() || !job.trim()) {
@@ -92,7 +88,6 @@ const [darkMode, setDarkMode] = useState(() => {
   };
 
   return (
-    // MAIN CONTAINER: Added dark:bg-gray-900 and dark:text-gray-100
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-800 dark:text-gray-100 transition-colors duration-200 p-8">
       <div className="max-w-6xl mx-auto">
         
