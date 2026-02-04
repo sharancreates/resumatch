@@ -3,7 +3,6 @@ from services.ai_engine import hybrid_match_score
 from utils.pdf_parser import parse_pdf
 import logging
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -18,8 +17,7 @@ def analyze_endpoint():
 
         if not resume or not job:
             return jsonify({"error": "Resume and Job description are required."}), 400
-        
-        # Reduced max length check to protect RAM
+
         if len(resume) > 20000 or len(job) > 20000: 
             return jsonify({"error": "Input too long. Max 20,000 characters."}), 400
 

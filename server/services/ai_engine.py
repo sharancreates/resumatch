@@ -8,12 +8,9 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Optimized Libraries for Low RAM (ONNX)
 from optimum.onnxruntime import ORTModelForFeatureExtraction
 from transformers import AutoTokenizer
 
-# --- NLTK Setup ---
-# Download only what is strictly necessary to save startup time/space
 def download_nltk_resources():
     resources = ['punkt', 'stopwords', 'punkt_tab']
     for res in resources:
@@ -27,7 +24,6 @@ def download_nltk_resources():
 
 download_nltk_resources()
 
-# --- Globals & Constants ---
 stemmer = PorterStemmer()
 nltk_stopwords = set(stopwords.words('english'))
 
@@ -40,11 +36,8 @@ CUSTOM_IGNORE = {
 
 STOP_WORDS = nltk_stopwords.union(CUSTOM_IGNORE)
 
-# --- Model Loading (Global & Quantized) ---
 print("Loading Optimized AI Model...")
 try:
-    # We use a pre-quantized model from the Hugging Face Hub
-    # This model is significantly smaller and uses less RAM than standard PyTorch models
     model_id = "optimum/all-MiniLM-L6-v2"
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = ORTModelForFeatureExtraction.from_pretrained(model_id)
@@ -54,8 +47,6 @@ except Exception as e:
     model = None
     tokenizer = None
 
-# --- Helper Functions ---
-
 def clean_and_tokenize(text_input):
     if not text_input:
         return []
@@ -63,36 +54,27 @@ def clean_and_tokenize(text_input):
     tokens = word_tokenize(cleaned)
     return [stemmer.stem(word) for word in tokens if word not in STOP_WORDS]
 
-@lru_cache(maxsize=512) # Reduced cache size to save RAM
+@lru_cache(maxsize=512)
 def get_cached_embedding(text):
     """
     Computes embedding using ONNX Runtime.
     """
     if model is None or not text.strip():
         return np.zeros(384)
-
-    # Simple truncation to prevent memory spikes on massive texts
-    # Taking first 20 sentences is usually enough for a resume summary
     sentences = sent_tokenize(text)[:20]
     
     if not sentences:
-        sentences = [text[:1000]] # Fallback to char slice if tokenization fails
+        sentences = [text[:1000]] 
 
     try:
-        # Tokenize
         inputs = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
         
-        # Inference
         outputs = model(**inputs)
         
-        # Mean Pooling: Average the token embeddings to get sentence embeddings
-        # model output[0] is last_hidden_state
         embeddings = outputs.last_hidden_state.numpy()
         
-        # Average tokens per sentence -> (num_sentences, 384)
         sentence_embeddings = np.mean(embeddings, axis=1)
         
-        # Average sentences per document -> (384,)
         final_embedding = np.mean(sentence_embeddings, axis=0)
         
         return final_embedding
@@ -107,7 +89,6 @@ def semantic_similarity(resume_text, job_text):
     resume_emb = get_cached_embedding(resume_text)
     job_emb = get_cached_embedding(job_text)
     
-    # Calculate Cosine Similarity
     dot_product = np.dot(resume_emb, job_emb)
     norm_resume = np.linalg.norm(resume_emb)
     norm_job = np.linalg.norm(job_emb)
@@ -122,7 +103,6 @@ def analyze_resume_lexical(resume_text, job_text):
     if not resume_text or not job_text:
         return {"score": 0.0, "missing": []}
 
-    # 1. Calculate Keyword Match Score
     vectorizer = CountVectorizer(
         tokenizer=clean_and_tokenize,
         token_pattern=None, 
@@ -138,7 +118,6 @@ def analyze_resume_lexical(resume_text, job_text):
     except ValueError:
         score_percent = 0.0
 
-    # 2. Identify Missing Keywords
     resume_stems = set(clean_and_tokenize(resume_text))
     
     clean_job_text = re.sub(r'[^a-zA-Z0-9]', ' ', job_text).lower()
@@ -162,7 +141,6 @@ def hybrid_match_score(resume_text, job_text):
     lexical_score = lexical_data["score"]
     semantic_score = semantic_similarity(resume_text, job_text)
     
-    # Weighted Average
     final_score = round((0.4 * lexical_score) + (0.6 * semantic_score), 2)
     
     return final_score, lexical_data["missing"], round(lexical_score, 2), round(semantic_score, 2)
