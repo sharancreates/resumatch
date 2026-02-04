@@ -1,22 +1,33 @@
 import nltk
 import re
 import numpy as np
-import hashlib
-from nltk.tokenize import word_tokenize
+from functools import lru_cache
+from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
 
-try:
-    nltk.data.find('tokenizers/punkt')
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('punkt_tab')
+# Optimized Libraries for Low RAM (ONNX)
+from optimum.onnxruntime import ORTModelForFeatureExtraction
+from transformers import AutoTokenizer
 
+# --- NLTK Setup ---
+# Download only what is strictly necessary to save startup time/space
+def download_nltk_resources():
+    resources = ['punkt', 'stopwords', 'punkt_tab']
+    for res in resources:
+        try:
+            nltk.data.find(f'tokenizers/{res}')
+        except LookupError:
+            try:
+                nltk.data.find(f'corpora/{res}')
+            except LookupError:
+                nltk.download(res, quiet=True)
+
+download_nltk_resources()
+
+# --- Globals & Constants ---
 stemmer = PorterStemmer()
 nltk_stopwords = set(stopwords.words('english'))
 
@@ -29,22 +40,21 @@ CUSTOM_IGNORE = {
 
 STOP_WORDS = nltk_stopwords.union(CUSTOM_IGNORE)
 
-print("AI Engine initialized (Lazy Loading Mode)")
-semantic_model = None 
-embedding_cache = {}
+# --- Model Loading (Global & Quantized) ---
+print("Loading Optimized AI Model...")
+try:
+    # We use a pre-quantized model from the Hugging Face Hub
+    # This model is significantly smaller and uses less RAM than standard PyTorch models
+    model_id = "optimum/all-MiniLM-L6-v2"
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = ORTModelForFeatureExtraction.from_pretrained(model_id)
+    print("AI Model Loaded Successfully.")
+except Exception as e:
+    print(f"CRITICAL ERROR loading model: {e}")
+    model = None
+    tokenizer = None
 
-def get_model():
-    global semantic_model
-    if semantic_model is None:
-        print("Loading SentenceTransformer Model (First Run)...")
-        semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
-    return semantic_model
-
-def safe_float(value):
-    try:
-        return float(value)
-    except (ValueError, TypeError):
-        return 0.0
+# --- Helper Functions ---
 
 def clean_and_tokenize(text_input):
     if not text_input:
@@ -53,67 +63,97 @@ def clean_and_tokenize(text_input):
     tokens = word_tokenize(cleaned)
     return [stemmer.stem(word) for word in tokens if word not in STOP_WORDS]
 
-def get_weighted_embedding(text):
-    key = hashlib.md5(text.encode('utf-8')).hexdigest()
-    if key in embedding_cache:
-        return embedding_cache[key]
-    
-    chunk_size = 500
-    chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
-    
-    if not chunks:
+@lru_cache(maxsize=512) # Reduced cache size to save RAM
+def get_cached_embedding(text):
+    """
+    Computes embedding using ONNX Runtime.
+    """
+    if model is None or not text.strip():
         return np.zeros(384)
 
-    model = get_model()
-    chunk_embeddings = model.encode(chunks, convert_to_numpy=True)
-    final_embedding = np.mean(chunk_embeddings, axis=0)
+    # Simple truncation to prevent memory spikes on massive texts
+    # Taking first 20 sentences is usually enough for a resume summary
+    sentences = sent_tokenize(text)[:20]
     
-    embedding_cache[key] = final_embedding
-    return final_embedding
+    if not sentences:
+        sentences = [text[:1000]] # Fallback to char slice if tokenization fails
+
+    try:
+        # Tokenize
+        inputs = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
+        
+        # Inference
+        outputs = model(**inputs)
+        
+        # Mean Pooling: Average the token embeddings to get sentence embeddings
+        # model output[0] is last_hidden_state
+        embeddings = outputs.last_hidden_state.numpy()
+        
+        # Average tokens per sentence -> (num_sentences, 384)
+        sentence_embeddings = np.mean(embeddings, axis=1)
+        
+        # Average sentences per document -> (384,)
+        final_embedding = np.mean(sentence_embeddings, axis=0)
+        
+        return final_embedding
+    except Exception as e:
+        print(f"Embedding Error: {e}")
+        return np.zeros(384)
 
 def semantic_similarity(resume_text, job_text):
     if not resume_text or not job_text:
         return 0.0
     
-    resume_emb = get_weighted_embedding(resume_text)
-    job_emb = get_weighted_embedding(job_text)
+    resume_emb = get_cached_embedding(resume_text)
+    job_emb = get_cached_embedding(job_text)
     
-    similarity = np.dot(resume_emb, job_emb) / (np.linalg.norm(resume_emb) * np.linalg.norm(job_emb))
-    return safe_float(max(0, min(similarity * 100, 100)))
+    # Calculate Cosine Similarity
+    dot_product = np.dot(resume_emb, job_emb)
+    norm_resume = np.linalg.norm(resume_emb)
+    norm_job = np.linalg.norm(job_emb)
+    
+    if norm_resume == 0 or norm_job == 0:
+        return 0.0
+        
+    similarity = dot_product / (norm_resume * norm_job)
+    return float(max(0, min(similarity * 100, 100)))
 
 def analyze_resume_lexical(resume_text, job_text):
     if not resume_text or not job_text:
         return {"score": 0.0, "missing": []}
 
+    # 1. Calculate Keyword Match Score
     vectorizer = CountVectorizer(
         tokenizer=clean_and_tokenize,
-        token_pattern=None,
+        token_pattern=None, 
         binary=True,
         ngram_range=(1, 2)
     )
 
-    documents = [resume_text, job_text]
     try:
+        documents = [resume_text, job_text]
         matrix = vectorizer.fit_transform(documents)
-        score_percent = safe_float(cosine_similarity(matrix[0:1], matrix[1:2])[0][0] * 100)
+        cosine_sim = cosine_similarity(matrix[0:1], matrix[1:2])[0][0]
+        score_percent = float(cosine_sim * 100)
     except ValueError:
         score_percent = 0.0
 
+    # 2. Identify Missing Keywords
     resume_stems = set(clean_and_tokenize(resume_text))
-    job_stems = set(clean_and_tokenize(job_text))
-    missing_stems = job_stems - resume_stems
-
+    
     clean_job_text = re.sub(r'[^a-zA-Z0-9]', ' ', job_text).lower()
     job_words = word_tokenize(clean_job_text)
+    
     missing_display = []
-    seen = set()
+    seen_stems = set()
 
     for word in job_words:
         if word in STOP_WORDS: continue
         stem = stemmer.stem(word)
-        if stem in missing_stems and stem not in seen:
+        
+        if stem not in resume_stems and stem not in seen_stems:
             missing_display.append(word)
-            seen.add(stem)
+            seen_stems.add(stem)
 
     return {"score": score_percent, "missing": missing_display[:10]}
 
@@ -122,5 +162,7 @@ def hybrid_match_score(resume_text, job_text):
     lexical_score = lexical_data["score"]
     semantic_score = semantic_similarity(resume_text, job_text)
     
+    # Weighted Average
     final_score = round((0.4 * lexical_score) + (0.6 * semantic_score), 2)
-    return final_score, lexical_data["missing"], lexical_score, semantic_score
+    
+    return final_score, lexical_data["missing"], round(lexical_score, 2), round(semantic_score, 2)
