@@ -7,7 +7,6 @@ from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
 from optimum.onnxruntime import ORTModelForFeatureExtraction
 from transformers import AutoTokenizer
 
@@ -31,55 +30,53 @@ CUSTOM_IGNORE = {
     "job", "title", "description", "requirements", "summary", "experience",
     "looking", "seeking", "ideal", "candidate", "must", "have", "skills",
     "ensure", "ensuring", "high", "ability", "work", "responsibilities",
-    "duties", "role", "position", "year", "years", "plus", "strong", "knowledge"
+    "duties", "role", "position", "year", "years", "plus", "strong", "knowledge",
+    "degree", "preferred", "qualification", "qualifications", "opportunity",
+    "environment", "team", "player", "members", "communication", "collaborate",
+    "support", "help", "client", "clients", "customer", "business", "company",
+    "join", "make", "doing", "build", "building", "create", "creating",
+    "develop", "developing", "maintain", "maintaining", "manage", "managing",
+    "perform", "performing", "provide", "providing", "deliver", "delivering",
+    "using", "used", "working", "works", "include", "including", "require",
+    "requires", "participate", "skilled", "proficient", "excellent", "good"
 }
 
 STOP_WORDS = nltk_stopwords.union(CUSTOM_IGNORE)
 
-print("Loading Optimized AI Model...")
 try:
     model_id = "optimum/all-MiniLM-L6-v2"
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = ORTModelForFeatureExtraction.from_pretrained(model_id)
-    print("AI Model Loaded Successfully.")
-except Exception as e:
-    print(f"CRITICAL ERROR loading model: {e}")
+except Exception:
     model = None
     tokenizer = None
 
 def clean_and_tokenize(text_input):
     if not text_input:
         return []
-    cleaned = re.sub(r'[^a-zA-Z0-9]', ' ', text_input).lower()
+    
+    cleaned_input = text_input.replace('\\n', ' ').replace('\\r', ' ').replace('\\t', ' ')
+    cleaned = re.sub(r'[^a-zA-Z0-9]', ' ', cleaned_input).lower()
     tokens = word_tokenize(cleaned)
     return [stemmer.stem(word) for word in tokens if word not in STOP_WORDS]
 
 @lru_cache(maxsize=512)
 def get_cached_embedding(text):
-    """
-    Computes embedding using ONNX Runtime.
-    """
     if model is None or not text.strip():
         return np.zeros(384)
+
     sentences = sent_tokenize(text)[:20]
-    
     if not sentences:
-        sentences = [text[:1000]] 
+        sentences = [text[:1000]]
 
     try:
         inputs = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
-        
         outputs = model(**inputs)
-        
         embeddings = outputs.last_hidden_state.numpy()
-        
         sentence_embeddings = np.mean(embeddings, axis=1)
-        
         final_embedding = np.mean(sentence_embeddings, axis=0)
-        
         return final_embedding
-    except Exception as e:
-        print(f"Embedding Error: {e}")
+    except Exception:
         return np.zeros(384)
 
 def semantic_similarity(resume_text, job_text):
@@ -120,14 +117,17 @@ def analyze_resume_lexical(resume_text, job_text):
 
     resume_stems = set(clean_and_tokenize(resume_text))
     
-    clean_job_text = re.sub(r'[^a-zA-Z0-9]', ' ', job_text).lower()
+    clean_job_text_raw = job_text.replace('\\n', ' ').replace('\\r', ' ').replace('\\t', ' ')
+    clean_job_text = re.sub(r'[^a-zA-Z0-9]', ' ', clean_job_text_raw).lower()
     job_words = word_tokenize(clean_job_text)
     
     missing_display = []
     seen_stems = set()
 
     for word in job_words:
+        if len(word) < 3: continue 
         if word in STOP_WORDS: continue
+        
         stem = stemmer.stem(word)
         
         if stem not in resume_stems and stem not in seen_stems:
