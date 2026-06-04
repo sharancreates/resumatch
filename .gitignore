@@ -143,6 +143,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+server/env/
+client/node_modules/
 
 # Spyder project settings
 .spyderproject

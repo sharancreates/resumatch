@@ -1,7 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Header from './components/Header';
+import AuthModal from './components/AuthModal';
+import HistoryDrawer from './components/HistoryDrawer';
+import ResumeDropzone from './components/ResumeDropzone';
+import JobTextArea from './components/JobTextArea';
+import ResultDisplay from './components/ResultDisplay';
 
-const API_URL = "https://resumatch-cm7x.onrender.com"; 
+const API_URL = import.meta.env.VITE_API_URL || ""; 
 
 function App() {
   const [resume, setResume] = useState('');
@@ -11,7 +17,24 @@ function App() {
   const [uploading, setUploading] = useState(false);
   const [serverStatus, setServerStatus] = useState("Checking...");
   
-const [darkMode, setDarkMode] = useState(() => {
+  // Authentication State
+  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail') || '');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState('');
+  
+  // History State
+  const [history, setHistory] = useState([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Billing Tier State
+  const [isPremium, setIsPremium] = useState(false);
+
+  const [darkMode, setDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       return savedTheme === 'dark';
@@ -19,8 +42,6 @@ const [darkMode, setDarkMode] = useState(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   
-  const fileInputRef = useRef(null);
-
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -37,6 +58,91 @@ const [darkMode, setDarkMode] = useState(() => {
       .catch(() => setServerStatus("Offline 🔴"));
   }, []);
 
+  // Sync isPremium status if token is set
+  useEffect(() => {
+    if (!token) {
+      setIsPremium(false);
+      return;
+    }
+    const checkUserStatus = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setIsPremium(response.data.data.is_premium || false);
+      } catch (error) {
+        console.error("Failed to verify user profile:", error);
+      }
+    };
+    checkUserStatus();
+  }, [token]);
+
+  // Handle billing redirect success checking
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const upgradeStatus = urlParams.get('upgrade');
+    if (upgradeStatus === 'success') {
+      alert("Thank you! Your payment was successful and your account is upgraded to Premium.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (upgradeStatus === 'mock') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const handleUpgrade = async () => {
+    if (!token) {
+      alert("Please sign in to upgrade to Premium.");
+      return;
+    }
+    try {
+      const response = await axios.post(`${API_URL}/api/billing/checkout-session`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.data.status === "success") {
+        window.location.href = response.data.url;
+      } else if (response.data.status === "mock") {
+        const confirmMock = window.confirm("Stripe is not configured in this environment. Proceed with a Mock Upgrade to instantly grant Premium status?");
+        if (confirmMock) {
+          const mockUpgradeRes = await axios.post(`${API_URL}/api/billing/mock-upgrade`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (mockUpgradeRes.data.status === "success") {
+            setIsPremium(true);
+            alert("Congratulations! You are now upgraded to Premium.");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Upgrade checkout error:", err);
+      alert("Failed to initiate billing session.");
+    }
+  };
+
+  // Fetch scan history if logged in
+  const fetchHistory = async () => {
+    if (!token) return;
+    setLoadingHistory(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setHistory(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchHistory();
+    } else {
+      setHistory([]);
+    }
+  }, [token]);
+
   const handleAnalyze = async () => {
     if (!resume.trim() || !job.trim()) {
         alert("Please paste both your resume and the job description.");
@@ -47,11 +153,20 @@ const [darkMode, setDarkMode] = useState(() => {
     setResult(null); 
     
     try {
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await axios.post(`${API_URL}/api/analyze`, {
         resume: resume,
         job: job
-      });
+      }, { headers });
+
       setResult(response.data.data);
+      if (token) {
+        fetchHistory(); // Refresh history list
+      }
     } catch (error) {
       console.error("Analysis failed:", error);
       alert("Failed to connect to server. Check if backend is running.");
@@ -60,12 +175,12 @@ const [darkMode, setDarkMode] = useState(() => {
     }
   };
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
+  const parseResumeFile = async (file) => {
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      alert("Please upload a PDF file.");
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (fileExtension !== 'pdf' && fileExtension !== 'docx') {
+      alert("Please upload a PDF or DOCX file.");
       return;
     }
 
@@ -74,109 +189,119 @@ const [darkMode, setDarkMode] = useState(() => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${API_URL}/api/parse-pdf`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const headers = { 'Content-Type': 'multipart/form-data' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await axios.post(`${API_URL}/api/parse-pdf`, formData, { headers });
       setResume(response.data.text);
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to parse PDF. Please copy-paste text manually.");
+      alert("Failed to parse document. Please copy-paste text manually.");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = ""; 
     }
+  };
+
+  // Auth Handlers
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!emailInput.trim() || !passwordInput) {
+      setAuthError("Email and password are required.");
+      return;
+    }
+    try {
+      const endpoint = isRegister ? 'register' : 'login';
+      const response = await axios.post(`${API_URL}/api/auth/${endpoint}`, {
+        email: emailInput,
+        password: passwordInput
+      });
+
+      const { token: receivedToken, email: receivedEmail, is_premium: receivedIsPremium } = response.data;
+      localStorage.setItem('token', receivedToken);
+      localStorage.setItem('userEmail', receivedEmail);
+      setToken(receivedToken);
+      setUserEmail(receivedEmail);
+      setIsPremium(receivedIsPremium || false);
+      setAuthModalOpen(false);
+      setEmailInput('');
+      setPasswordInput('');
+    } catch (error) {
+      console.error("Auth failed:", error);
+      setAuthError(error.response?.data?.error || "Authentication failed. Try again.");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    setToken('');
+    setUserEmail('');
+    setIsPremium(false);
+    setHistory([]);
+    setDrawerOpen(false);
+  };
+
+  const handleDeleteHistory = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this scan from history?")) return;
+    try {
+      await axios.delete(`${API_URL}/api/history/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setHistory(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      console.error("Failed to delete history item:", error);
+      alert("Failed to delete item.");
+    }
+  };
+
+  const handleSelectHistoryItem = (item) => {
+    setResume(item.resume_text);
+    setJob(item.job_description);
+    setResult({
+      score: item.score,
+      missing: JSON.parse(item.missing_keywords || "[]"),
+      lexical_score: item.lexical_score,
+      semantic_score: item.semantic_score
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-800 dark:text-gray-100 transition-colors duration-200 p-8">
       <div className="max-w-6xl mx-auto">
-        
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-indigo-700 dark:text-indigo-400 tracking-tight">
-              ResuMatch <span className="text-indigo-400 dark:text-indigo-200">AI</span>
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Hybrid Logic: Keywords + Semantic Meaning
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Server Status Badge */}
-            <div className={`text-xs font-mono px-3 py-1 rounded-full border 
-              ${serverStatus.includes("Online") 
-                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800" 
-                : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
-              }`}>
-              Server: {serverStatus}
-            </div>
-
-            {/* DARK MODE TOGGLE BUTTON */}
-            <button 
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-              title="Toggle Dark Mode"
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button>
-          </div>
-        </header>
+        <Header 
+          serverStatus={serverStatus}
+          token={token}
+          userEmail={userEmail}
+          historyLength={history.length}
+          setDrawerOpen={setDrawerOpen}
+          handleLogout={handleLogout}
+          setAuthModalOpen={setAuthModalOpen}
+          setIsRegister={setIsRegister}
+          setAuthError={setAuthError}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          isPremium={isPremium}
+          handleUpgrade={handleUpgrade}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
           {/* LEFT: Inputs */}
           <div className="space-y-6">
-            
-            {/* Resume Section */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">1. Your Resume</label>
-                
-                {/* PDF Upload Button */}
-                <div className="relative">
-                  <input 
-                    type="file" 
-                    accept=".pdf" 
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                    className="hidden" 
-                  />
-                  <button 
-                    onClick={() => fileInputRef.current.click()}
-                    disabled={uploading}
-                    className="text-xs flex items-center gap-1 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition font-semibold"
-                  >
-                    {uploading ? (
-                      <span>Parsing...</span>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        Upload PDF
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+            <ResumeDropzone 
+              resume={resume}
+              setResume={setResume}
+              uploading={uploading}
+              parseResumeFile={parseResumeFile}
+            />
 
-              <textarea 
-                className="w-full h-48 p-3 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                placeholder="Paste text or upload PDF..."
-                value={resume}
-                onChange={(e) => setResume(e.target.value)}
-              />
-            </div>
-            
-            {/* Job Section */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">2. Job Description</label>
-              <textarea 
-                className="w-full h-48 p-3 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400"
-                placeholder="Paste the job description here..."
-                value={job}
-                onChange={(e) => setJob(e.target.value)}
-              />
-            </div>
+            <JobTextArea 
+              job={job}
+              setJob={setJob}
+            />
 
             <button 
               onClick={handleAnalyze}
@@ -199,76 +324,39 @@ const [darkMode, setDarkMode] = useState(() => {
 
           {/* RIGHT: Results */}
           <div className="space-y-6">
-            {!result ? (
-              <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 transition-colors">
-                <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <p>Results will appear here</p>
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 animate-fade-in transition-colors">
-                
-                {/* Total Score */}
-                <div className="text-center mb-8 relative">
-                  <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Overall Match Score</h2>
-                  <div className={`text-7xl font-black 
-                    ${result.score >= 70 ? 'text-green-500 dark:text-green-400' : result.score >= 40 ? 'text-yellow-500 dark:text-yellow-400' : 'text-red-500 dark:text-red-400'}
-                  `}>
-                    {result.score}%
-                  </div>
-                  
-                  {/* Status Badge */}
-                  <div className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase
-                    ${result.score >= 70 
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                      : result.score >= 40 
-                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' 
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}
-                  `}>
-                    {result.score >= 70 ? 'High Match 🚀' : result.score >= 40 ? 'Potential Match ⚠️' : 'Low Match ❌'}
-                  </div>
-                </div>
-
-                {/* The Breakdown */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center border border-gray-100 dark:border-gray-600">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Keywords</div>
-                    <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{result.breakdown.lexical.toFixed(1)}%</div>
-                    <div className="text-[10px] text-gray-400">Exact matches</div>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center border border-gray-100 dark:border-gray-600">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Meaning</div>
-                    <div className="text-xl font-bold text-purple-600 dark:text-purple-400">{result.breakdown.semantic.toFixed(1)}%</div>
-                    <div className="text-[10px] text-gray-400">Context/Synonyms</div>
-                  </div>
-                </div>
-
-                {/* Missing Keywords */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    Missing Keywords
-                  </h3>
-                  
-                  {result.missing.length === 0 ? (
-                     <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-sm text-center">
-                       ✨ Incredible! No major keywords missing.
-                     </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {result.missing.map((word, index) => (
-                        <span key={index} className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium border border-red-100 dark:border-red-900/30 shadow-sm">
-                          {word}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            )}
+            <ResultDisplay 
+              result={result} 
+              isPremium={isPremium} 
+              handleUpgrade={handleUpgrade} 
+              token={token} 
+              API_URL={API_URL} 
+            />
           </div>
         </div>
       </div>
+
+      <HistoryDrawer 
+        drawerOpen={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
+        loadingHistory={loadingHistory}
+        history={history}
+        handleSelectHistoryItem={handleSelectHistoryItem}
+        handleDeleteHistory={handleDeleteHistory}
+      />
+
+      <AuthModal 
+        authModalOpen={authModalOpen}
+        setAuthModalOpen={setAuthModalOpen}
+        isRegister={isRegister}
+        setIsRegister={setIsRegister}
+        authError={authError}
+        setAuthError={setAuthError}
+        emailInput={emailInput}
+        setEmailInput={setEmailInput}
+        passwordInput={passwordInput}
+        setPasswordInput={setPasswordInput}
+        handleAuthSubmit={handleAuthSubmit}
+      />
     </div>
   );
 }
