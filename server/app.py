@@ -1,64 +1,50 @@
 import os
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Load environment configuration variables
 load_dotenv()
 
-from flask import Flask
-from flask_cors import CORS
-from routes.analyze import analyze_bp
-from routes.auth import auth_bp
-from routes.billing import billing_bp
-from models import db
-from utils.limiter import limiter
+from routes.auth import auth_router
+from routes.billing import billing_router
+from routes.analyze import analyze_router
+from routes.teams import teams_router
+from utils.db import init_db
 
-app = Flask(__name__)
+app = FastAPI(
+    title="ResuMatch SaaS API",
+    description="A multi-tenant resume parser, ATS hybrid scanner, and AI rewriter API.",
+    version="1.0.0"
+)
 
-# Security and database configurations
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///resumatch.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Load secret key; issue a caution in production if the default is in use
-default_secret = 'dev-secret-key-resumatch-9821'
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', default_secret)
-
-# Read debug environment
-debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
-
-if not debug_mode and app.config['SECRET_KEY'] == default_secret:
-    print("WARNING: Using default SECRET_KEY in production mode! Please set SECRET_KEY environment variable.")
-
-# Initialize DB and Limiter
-db.init_app(app)
-limiter.init_app(app)
-
-# CORS: use ALLOWED_ORIGINS env var in production, default to Vite dev server
+# CORS Configuration
 allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
-CORS(app, origins=allowed_origins)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app.register_blueprint(analyze_bp, url_prefix='/api')
-app.register_blueprint(auth_bp, url_prefix='/api')
-app.register_blueprint(billing_bp, url_prefix='/api/billing')
+# Include Routers
+app.include_router(auth_router)
+app.include_router(billing_router)
+app.include_router(analyze_router)
+app.include_router(teams_router)
 
-# Auto-create tables on startup and apply schema patches
-with app.app_context():
-    db.create_all()
-    
-    # 1. Apply is_premium patch to users table if not exists
+# Initialize Database tables
+@app.on_event("startup")
+def startup_event():
+    print("ResuMatch Core API Booting...")
     try:
-        db.session.execute(db.text("ALTER TABLE users ADD COLUMN is_premium BOOLEAN DEFAULT 0"))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        
-    # 2. Apply resume_structure patch to resume_analyses table if not exists
-    try:
-        db.session.execute(db.text("ALTER TABLE resume_analyses ADD COLUMN resume_structure TEXT"))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+        init_db()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
 
-if __name__ == '__main__':  
-    print(f"ResuMatch Server Starting (debug={debug_mode})...")
-    app.run(debug=debug_mode, port=5000)
+if __name__ == '__main__':
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
+    print(f"Running ResuMatch API (debug={debug_mode})...")
+    uvicorn.run("app:app", host="0.0.0.0", port=5001, reload=debug_mode)

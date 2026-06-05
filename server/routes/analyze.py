@@ -1,70 +1,138 @@
-from flask import Blueprint, request, jsonify, g
+import os
+import re
+import uuid
+import json
+import logging
+import requests
+from io import BytesIO
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+
+from models import User, Resume, ResumeVersion, JobDescription, Analysis, Membership
 from services.ai_engine import hybrid_match_score, is_model_loaded
 from utils.pdf_parser import parse_pdf
 from utils.docx_parser import parse_docx
-from utils.auth_helper import get_current_user_optional, token_required
-from models import db, ResumeAnalysis, User
-import os
-import re
-import requests
-from io import BytesIO
-from flask import send_file
+from utils.resume_parser import parse_resume_structure
+from utils.db import get_db
+from utils.auth_helper import get_current_user, get_current_user_optional
+
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from utils.limiter import limiter
-import logging
-import json
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-analyze_bp = Blueprint('analyze', __name__)
+analyze_router = APIRouter(prefix="/api", tags=["analyze"])
 
-@analyze_bp.route('/analyze', methods=['POST'])
-@limiter.limit("15 per minute")
-def analyze_endpoint():
+class AnalyzeRequest(BaseModel):
+    resume: str
+    job: str
+
+@analyze_router.post('/analyze')
+def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_current_user_optional), db: Session = Depends(get_db)):
     try:
-        data = request.json or {}
-        resume = data.get('resume', '')
-        job = data.get('job', '')
+        resume_text = req.resume
+        job_text = req.job
 
-        if not resume or not job:
-            return jsonify({"error": "Resume and Job description are required."}), 400
+        if not resume_text or not job_text:
+            raise HTTPException(status_code=400, detail="Resume and Job description are required.")
 
-        if len(resume) > 20000 or len(job) > 20000: 
-            return jsonify({"error": "Input too long. Max 20,000 characters."}), 400
+        if len(resume_text) > 20000 or len(job_text) > 20000: 
+            raise HTTPException(status_code=400, detail="Input too long. Max 20,000 characters.")
 
-        final_score, missing_keywords, lexical_score, semantic_score = hybrid_match_score(resume, job)
+        # Calculate scores
+        final_score, missing_keywords, lexical_score, semantic_score = hybrid_match_score(resume_text, job_text)
 
-        from utils.resume_parser import parse_resume_structure
-        structure = parse_resume_structure(resume)
+        # Parse resume structure
+        structure = parse_resume_structure(resume_text)
 
-        # Check if user is logged in to save history
-        user = get_current_user_optional()
+        # Generate placeholders for mock AI suggestions
+        skills_gap = {
+            "missing": missing_keywords,
+            "matched": [s for s in ["Python", "React", "SQL"] if s.lower() in resume_text.lower()]
+        }
+        recommendations = [
+            f"Add hands-on achievements incorporating missing skills: {', '.join(missing_keywords[:3])}."
+        ]
+
         analysis_id = None
         if user:
             try:
-                analysis = ResumeAnalysis(
-                    user_id=user.id,
-                    resume_text=resume,
-                    job_description=job,
+                # Find user's active membership
+                membership = db.query(Membership).filter(Membership.user_id == user.id).first()
+                org_id = membership.organization_id if membership else None
+
+                # 1. Fetch or create user's default resume container
+                resume = db.query(Resume).filter(Resume.user_id == user.id, Resume.is_archived == False).first()
+                if not resume:
+                    resume = Resume(
+                        id=str(uuid.uuid4()),
+                        user_id=user.id,
+                        organization_id=org_id,
+                        title="My Default Resume"
+                    )
+                    db.add(resume)
+                    db.flush()
+
+                # Enforce free tier scan limit (10 scans)
+                if not user.is_premium:
+                    scan_count = db.query(Analysis).filter(Analysis.resume_id == resume.id).count()
+                    if scan_count >= 10:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Free tier scan limit (10 scans) reached. Please upgrade to Premium."
+                        )
+
+                # 2. Add a new version of the resume
+                version_count = db.query(ResumeVersion).filter(ResumeVersion.resume_id == resume.id).count()
+                resume_version = ResumeVersion(
+                    id=str(uuid.uuid4()),
+                    resume_id=resume.id,
+                    version=version_count + 1,
+                    file_url="database-direct",
+                    resume_text=resume_text,
+                    parsed_json=structure
+                )
+                db.add(resume_version)
+                db.flush()
+
+                # 3. Create job description logs
+                job_desc = JobDescription(
+                    id=str(uuid.uuid4()),
+                    organization_id=org_id,
+                    title="Target Scanned Job",
+                    job_text=job_text,
+                    tags=[]
+                )
+                db.add(job_desc)
+                db.flush()
+
+                # 4. Save analysis record
+                analysis = Analysis(
+                    id=str(uuid.uuid4()),
+                    resume_id=resume.id,
+                    resume_version_id=resume_version.id,
+                    job_description_id=job_desc.id,
                     score=final_score,
                     lexical_score=lexical_score,
                     semantic_score=semantic_score,
-                    missing_keywords=json.dumps(missing_keywords),
-                    resume_structure=json.dumps(structure)
+                    missing_keywords=missing_keywords,
+                    skills_gap=skills_gap,
+                    recommendations=recommendations
                 )
-                db.session.add(analysis)
-                db.session.commit()
+                db.add(analysis)
+                db.commit()
                 analysis_id = analysis.id
             except Exception as db_err:
-                db.session.rollback()
+                db.rollback()
                 logger.error(f"Failed to save analysis to DB: {str(db_err)}")
-                # Do not fail the request if database save fails, still return the scores
+                # Continue returning scores even if save fails (resilient)
 
-        return jsonify({
+        return {
             "status": "success",
             "data": {
                 "id": analysis_id,
@@ -76,100 +144,127 @@ def analyze_endpoint():
                 },
                 "structure": structure
             }
-        })
+        }
     except Exception as e:
         logger.error(f"Analysis Error: {str(e)}")
-        # In production, never return str(e) to the client (security risk). Log it instead.
-        return jsonify({"error": "Internal processing error."}), 500
+        raise HTTPException(status_code=500, detail="Internal processing error.")
 
-@analyze_bp.route('/history', methods=['GET'])
-@token_required
-def get_history():
+@analyze_router.get('/history')
+def get_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        analyses = ResumeAnalysis.query.filter_by(user_id=g.user.id).order_by(ResumeAnalysis.created_at.desc()).all()
-        return jsonify({
+        # Find user's resume container
+        resume = db.query(Resume).filter(Resume.user_id == user.id, Resume.is_archived == False).first()
+        if not resume:
+            return {"status": "success", "data": []}
+
+        analyses = db.query(Analysis).filter(Analysis.resume_id == resume.id).order_by(Analysis.created_at.desc()).all()
+        
+        # Format results matching react client expectation
+        history_list = []
+        for a in analyses:
+            # Query associated text details
+            version = db.query(ResumeVersion).filter(ResumeVersion.id == a.resume_version_id).first()
+            job = db.query(JobDescription).filter(JobDescription.id == a.job_description_id).first()
+            
+            history_list.append({
+                "id": a.id,
+                "user_id": user.id,
+                "resume_text": version.resume_text if version else "",
+                "job_description": job.job_text if job else "",
+                "score": a.score,
+                "lexical_score": a.lexical_score,
+                "semantic_score": a.semantic_score,
+                "missing_keywords": json.dumps(a.missing_keywords),
+                "resume_structure": json.dumps(version.parsed_json if version else {}),
+                "created_at": a.created_at.isoformat() if a.created_at else None
+            })
+            
+        return {
             "status": "success",
-            "data": [a.to_dict() for a in analyses]
-        })
+            "data": history_list
+        }
     except Exception as e:
         logger.error(f"Fetch History Error: {str(e)}")
-        return jsonify({"error": "Failed to fetch history."}), 500
+        raise HTTPException(status_code=500, detail="Failed to fetch history.")
 
-@analyze_bp.route('/history/<int:analysis_id>', methods=['DELETE'])
-@token_required
-def delete_history_item(analysis_id):
+@analyze_router.delete('/history/{analysis_id}')
+def delete_history_item(analysis_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        analysis = ResumeAnalysis.query.filter_by(id=analysis_id, user_id=g.user.id).first()
+        # Locate the user's resumes
+        resume = db.query(Resume).filter(Resume.user_id == user.id).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="Analysis record not found.")
+
+        analysis = db.query(Analysis).filter(Analysis.id == analysis_id, Analysis.resume_id == resume.id).first()
         if not analysis:
-            return jsonify({"error": "Analysis record not found."}), 404
+            raise HTTPException(status_code=404, detail="Analysis record not found.")
         
-        db.session.delete(analysis)
-        db.session.commit()
-        return jsonify({
+        db.delete(analysis)
+        db.commit()
+        return {
             "status": "success",
             "message": "Analysis history item deleted."
-        })
+        }
     except Exception as e:
-        db.session.rollback()
+        db.rollback()
         logger.error(f"Delete History Error: {str(e)}")
-        return jsonify({"error": "Failed to delete history item."}), 500
+        raise HTTPException(status_code=500, detail="Failed to delete history item.")
 
-@analyze_bp.route('/parse-pdf', methods=['POST'])
-@limiter.limit("15 per minute")
-def parse_pdf_endpoint():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-    
-    file = request.files['file']
-    
-    if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
-        
+@analyze_router.post('/parse-pdf')
+async def parse_pdf_endpoint(file: UploadFile = File(...)):
     filename_lower = file.filename.lower()
     if not (filename_lower.endswith('.pdf') or filename_lower.endswith('.docx')):
-        return jsonify({"error": "Invalid file type. Please upload a PDF or DOCX file."}), 400
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF or DOCX file.")
 
     try:
-        header = file.stream.read(4)
-        file.stream.seek(0)
+        content = await file.read()
+        header = content[:4]
+        stream = BytesIO(content)
 
         if filename_lower.endswith('.pdf'):
             if not header.startswith(b'%PDF'):
-                return jsonify({"error": "Invalid file signature. Uploaded file is not a valid PDF."}), 400
-            text = parse_pdf(file.stream)
+                raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid PDF.")
+            text = parse_pdf(stream)
         else:
             if not header.startswith(b'PK\x03\x04'):
-                return jsonify({"error": "Invalid file signature. Uploaded file is not a valid DOCX document."}), 400
-            text = parse_docx(file.stream)
-        return jsonify({"status": "success", "text": text})
+                raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid DOCX document.")
+            text = parse_docx(stream)
+        
+        return {"status": "success", "text": text}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         logger.error(f"File Parse Error: {str(e)}")
-        return jsonify({"error": "Failed to parse file. Document may be corrupted."}), 500
+        raise HTTPException(status_code=500, detail="Failed to parse file. Document may be corrupted.")
 
-@analyze_bp.route('/analyze/<int:analysis_id>/suggestions', methods=['GET'])
-@token_required
-def get_bullet_suggestions(analysis_id):
+@analyze_router.get('/analyze/{analysis_id}/suggestions')
+def get_bullet_suggestions(analysis_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        user = User.query.get(g.user.id)
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-            
-        analysis = ResumeAnalysis.query.filter_by(id=analysis_id, user_id=g.user.id).first()
+        analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
         if not analysis:
-            return jsonify({"error": "Analysis record not found"}), 404
-            
+            raise HTTPException(status_code=404, detail="Analysis record not found")
+
+        # Double check owner access
+        resume = db.query(Resume).filter(Resume.id == analysis.resume_id, Resume.user_id == user.id).first()
+        if not resume:
+            raise HTTPException(status_code=403, detail="Forbidden.")
+
         if not user.is_premium:
-            return jsonify({
+            return {
                 "status": "locked",
                 "message": "Upgrade to Premium to unlock AI suggestions."
-            }), 403
+            }
 
+        # Check Gemini Key
         gemini_key = os.environ.get('GEMINI_API_KEY')
         if gemini_key:
+            version = db.query(ResumeVersion).filter(ResumeVersion.id == analysis.resume_version_id).first()
+            job = db.query(JobDescription).filter(JobDescription.id == analysis.job_description_id).first()
+            
             prompt = f"""
             You are an expert resume writer and recruiter. Analyze the following resume and job description.
-            Resume Text: {analysis.resume_text[:4000]}
-            Job Description: {analysis.job_description[:4000]}
+            Resume Text: {version.resume_text[:4000] if version else ""}
+            Job Description: {job.job_text[:4000] if job else ""}
             
             Generate 3 concrete, high-impact resume bullet point rewrite suggestions.
             Format your response as a simple JSON array of strings, for example:
@@ -196,19 +291,15 @@ def get_bullet_suggestions(analysis_id):
                         candidate_text = re.sub(r'\n```$', '', candidate_text)
                     try:
                         suggestions = json.loads(candidate_text)
-                        return jsonify({"status": "success", "suggestions": suggestions})
+                        return {"status": "success", "suggestions": suggestions}
                     except Exception:
                         lines = [line.strip("-* ").strip() for line in candidate_text.split("\n") if line.strip()]
-                        return jsonify({"status": "success", "suggestions": lines[:3]})
+                        return {"status": "success", "suggestions": lines[:3]}
             except Exception as e:
                 logger.error(f"Gemini API invocation failed: {str(e)}")
 
         # Fallback offline generator
-        try:
-            missing_list = json.loads(analysis.missing_keywords)
-        except Exception:
-            missing_list = []
-            
+        missing_list = analysis.missing_keywords
         suggestions = [
             "Include more quantifiable achievements: e.g. instead of 'Responsible for React development', write 'Engineered 12+ reusable React components, saving 15 hours of design iterations'.",
             "Action verbs matter: start your project descriptions with strong verbs like 'Spearheaded', 'Optimized', 'Architected', or 'Leveraged'."
@@ -219,18 +310,25 @@ def get_bullet_suggestions(analysis_id):
         else:
             suggestions.append("Align resume formatting: ensure your technical skills section is sorted by relevance to the targeting job profile.")
             
-        return jsonify({"status": "success", "suggestions": suggestions})
+        return {"status": "success", "suggestions": suggestions}
     except Exception as e:
         logger.error(f"Suggestions Error: {str(e)}")
-        return jsonify({"error": "Failed to fetch suggestions."}), 500
+        raise HTTPException(status_code=500, detail="Failed to fetch suggestions.")
 
-@analyze_bp.route('/history/<int:analysis_id>/export', methods=['GET'])
-@token_required
-def export_report_endpoint(analysis_id):
+@analyze_router.get('/history/{analysis_id}/export')
+def export_report_endpoint(analysis_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        analysis = ResumeAnalysis.query.filter_by(id=analysis_id, user_id=g.user.id).first()
+        analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
         if not analysis:
-            return jsonify({"error": "Analysis not found."}), 404
+            raise HTTPException(status_code=404, detail="Analysis record not found.")
+
+        # Double check owner access
+        resume = db.query(Resume).filter(Resume.id == analysis.resume_id, Resume.user_id == user.id).first()
+        if not resume:
+            raise HTTPException(status_code=403, detail="Forbidden.")
+            
+        version = db.query(ResumeVersion).filter(ResumeVersion.id == analysis.resume_version_id).first()
+        job = db.query(JobDescription).filter(JobDescription.id == analysis.job_description_id).first()
             
         buffer = BytesIO()
         doc = SimpleDocTemplate(
@@ -313,10 +411,7 @@ def export_report_endpoint(analysis_id):
         story.append(Spacer(1, 15))
         
         story.append(Paragraph("Missing Skills & Keywords", h2_style))
-        try:
-            missing = json.loads(analysis.missing_keywords)
-        except Exception:
-            missing = []
+        missing = analysis.missing_keywords
             
         if missing:
             missing_text = "The scan detected the following skills or entities in the target job description that are missing or underrepresented in your resume:<br/><br/>"
@@ -339,21 +434,21 @@ def export_report_endpoint(analysis_id):
         doc.build(story)
         buffer.seek(0)
         
-        return send_file(
+        # Yield streaming response
+        return StreamingResponse(
             buffer,
-            as_attachment=True,
-            download_name=f"resumatch_report_{analysis_id}.pdf",
-            mimetype='application/pdf'
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=resumatch_report_{analysis_id}.pdf"}
         )
     except Exception as e:
         logger.error(f"PDF Export Error: {str(e)}")
-        return jsonify({"error": "Failed to generate PDF report."}), 500
+        raise HTTPException(status_code=500, detail="Failed to generate PDF report.")
 
-@analyze_bp.route('/health', methods=['GET'])
+@analyze_router.get('/health')
 def health_check():
     model_status = "loaded" if is_model_loaded() else "unavailable"
-    return jsonify({
+    return {
         "status": "alive",
         "message": "ResuMatch Backend Ready",
         "semantic_model": model_status,
-    })
+    }
