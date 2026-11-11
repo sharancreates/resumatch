@@ -23,3 +23,4 @@ jobs:
           api-key: ${{ secrets.OPENROUTER_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           mode: 'visible'
+          fail-on-findings: 'true'
