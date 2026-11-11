@@ -1,0 +1,305 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  RECRUITER
+  VIEWER
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  TEAM
+}
+
+enum NotificationType {
+  EMAIL
+  IN_APP
+}
+
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  passwordHash      String?        // Nullable for OAuth-only accounts
+  name              String?
+  linkedinUrl       String?
+  industry          String?
+  jobTitle          String?
+  resumePreference  Json?          // User preferences (e.g., template choice, export layouts)
+  emailVerified     Boolean        @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relationships
+  memberships       Membership[]
+  resumes           Resume[]
+  usageLogs         UsageLog[]
+  apiKeys           ApiKey[]
+  notifications     Notification[]
+  referrals         Referral[]     @relation("Referrer")
+  refereeProfile    Referral?      @relation("Referee")
+  affiliate         Affiliate?
+
+  @@index([email])
+}
+
+model Organization {
+  id              String           @id @default(uuid())
+  name            String
+  slug            String           @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Multi-tenant configuration
+  memberships     Membership[]
+  workspaces      Workspace[]
+  subscription    Subscription?
+  auditLogs       AuditLog[]
+  resumes         Resume[]         // Organization-level shared resumes
+  jobDescriptions JobDescription[] // Organization-level job descriptions
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           Role         @default(VIEWER)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Workspace {
+  id             String           @id @default(uuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime         @default(now())
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  resumes        Resume[]
+  jobDescriptions JobDescription[]
+
+  @@index([organizationId])
+}
+
+model Resume {
+  id             String          @id @default(uuid())
+  userId         String          // Owner of the resume
+  organizationId String?         // Optional: link to organization for shared recruitment libraries
+  workspaceId    String?         // Optional: associated workspace
+  title          String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  isArchived     Boolean         @default(false)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  versions       ResumeVersion[]
+  analyses       Analysis[]
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model ResumeVersion {
+  id           String     @id @default(uuid())
+  resumeId     String
+  version      Int
+  fileUrl      String     // S3 / R2 / Supabase storage link
+  resumeText   String     @db.Text
+  parsedJson   Json       // Structured section data (contact, experience, skills, education)
+  createdAt    DateTime   @default(now())
+
+  resume       Resume     @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  analyses     Analysis[]
+
+  @@unique([resumeId, version])
+  @@index([resumeId])
+}
+
+model JobDescription {
+  id             String        @id @default(uuid())
+  organizationId String?       // Optional for private logs
+  workspaceId    String?
+  title          String
+  companyName    String?
+  jobText        String        @db.Text
+  tags           String[]      // Simple array tags for categorizing JD types
+  isFavorite     Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspace      Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  analyses       Analysis[]
+
+  @@index([organizationId])
+}
+
+model Analysis {
+  id               String         @id @default(uuid())
+  resumeId         String
+  resumeVersionId  String
+  jobDescriptionId String
+  score            Float          // Hybrid Score (Lexical & Semantic weight)
+  lexicalScore     Float
+  semanticScore    Float
+  missingKeywords  Json           // Array of missing skills/keywords
+  skillsGap        Json           // Found vs Missing skills breakdown
+  recommendations  Json           // Structured AI recommendations
+  createdAt        DateTime       @default(now())
+
+  resume           Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  resumeVersion    ResumeVersion  @relation(fields: [resumeVersionId], references: [id], onDelete: Cascade)
+  jobDescription   JobDescription @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  reports          Report[]
+
+  @@index([resumeId])
+  @@index([resumeVersionId])
+  @@index([jobDescriptionId])
+}
+
+model Report {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  analysisIds String[]   // References to compared analyses
+  pdfUrl      String?    // Cached PDF summary URL
+  createdAt   DateTime   @default(now())
+
+  analyses    Analysis[]
+}
+
+model Subscription {
+  id                   String       @id @default(uuid())
+  organizationId       String       @unique
+  stripeCustomerId     String       @unique
+  stripeSubscriptionId String?      @unique
+  plan                 PlanTier     @default(FREE)
+  status               String       // active, past_due, canceled, trialing, paused
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  stripeInvoiceId  String   @unique
+  stripeCustomerId String
+  amount           Int      // In cents
+  currency         String
+  status           String   // paid, open, uncollectible, void
+  pdfUrl           String?  // Stripe Hosted PDF Link
+  createdAt        DateTime @default(now())
+
+  @@index([stripeCustomerId])
+}
+
+model ApiKey {
+  id           String    @id @default(uuid())
+  userId       String
+  keyPrefix    String    // e.g., "rm_" + first 6 characters
+  keyHash      String    @unique // Hashed key stored securely
+  name         String
+  rateLimit    Int       @default(100) // Limit per minute
+  scopes       String[]  // ["resume:read", "resume:write", "analyze"]
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+  lastUsedAt   DateTime?
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UsageLog {
+  id           String   @id @default(uuid())
+  userId       String
+  endpoint     String
+  scansUsed    Int      @default(1)
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  organizationId String
+  actorId        String       // User ID who performed the action
+  action         String       // e.g., "RESUME_UPLOAD", "MEMBER_INVITED"
+  targetType     String       // e.g., "Resume", "Member"
+  targetId       String?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime     @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+model Referral {
+  id           String    @id @default(uuid())
+  referrerId   String    // Referrer User
+  refereeId    String    @unique // Referee User
+  rewardGiven  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  referrer     User      @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee      User      @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+}
+
+model Affiliate {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  affiliateCode String   @unique
+  commissionPct Float    @default(15.0) // Percentage referral cut
+  earningsTotal Int      @default(0)   // Total earnings in cents
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
