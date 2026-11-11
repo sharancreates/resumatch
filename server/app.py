@@ -45,6 +45,6 @@ def startup_event():
         print(f"Error initializing database: {e}")
 
 if __name__ == '__main__':
-    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't"]
+uvicorn.run("app:app", host="0.0.0.0", port=5001, reload=debug_mode)
     print(f"Running ResuMatch API (debug={debug_mode})...")
     uvicorn.run("app:app", host="0.0.0.0", port=5001, reload=debug_mode)))
