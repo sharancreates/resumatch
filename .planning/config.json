@@ -1,0 +1,15 @@
+{
+  "project": "ResuMatch AI",
+  "version": "1.0.0",
+  "language": "python/javascript",
+  "frameworks": {
+    "backend": "FastAPI",
+    "frontend": "React",
+    "database": "PostgreSQL/SQLAlchemy"
+  },
+  "workflow": {
+    "auto_commit": true,
+    "branch_checks": true,
+    "verify_uat": true
+  }
+}
