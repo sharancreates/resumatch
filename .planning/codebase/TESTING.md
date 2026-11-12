@@ -78,7 +78,7 @@ pytest tests/ -v
 > **Active Execution Blocker on Branch `check-pr`**:
 > Commit `b47f8d9` introduced intentional or accidental syntax errors in [`server/app.py`](file:///c:/Users/Sharanya%20Nagar/Desktop/Projects/resumatch/server/app.py#L48-L50):
 > ```python
-> debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't"]
+debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
 > uvicorn.run("app:app", host="0.0.0.0", port=5001, reload=debug_mode)))
 > ```
 > Because [`test_robustness.py`](file:///c:/Users/Sharanya%20Nagar/Desktop/Projects/resumatch/server/tests/test_robustness.py#L3) and [`test_storage.py`](file:///c:/Users/Sharanya%20Nagar/Desktop/Projects/resumatch/server/tests/test_storage.py#L4) import `from app import app`, running pytest across the entire directory currently fails during module import.
