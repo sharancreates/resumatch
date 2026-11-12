@@ -53,3 +53,4 @@ def test_report_model_to_dict():
     assert data["analysis_ids"] == [analysis_id]
     assert data["pdf_url"].startswith("/api/uploads/")
     assert data["created_at"] is not None
+

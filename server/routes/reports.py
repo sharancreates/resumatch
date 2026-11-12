@@ -240,3 +240,4 @@ def delete_report(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to delete report: {str(e)}")
+

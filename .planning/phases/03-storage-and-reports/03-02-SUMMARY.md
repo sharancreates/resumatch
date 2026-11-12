@@ -33,3 +33,4 @@ Extracted ReportLab PDF evaluation report generation into an isolated, reusable 
 ## 3. Verification
 - `python -m py_compile` passed cleanly on `server/services/report_generator.py`, `server/routes/reports.py`, `server/app.py`, and `server/tests/test_reports.py`.
 - Fast non-blocking unit assertions verified PDF byte signatures, `Report.to_dict()` fields, and service functionality.
+

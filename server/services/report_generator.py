@@ -132,3 +132,4 @@ def build_ats_report_pdf(analysis, resume_version=None, job_description=None, ca
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
+

@@ -31,3 +31,4 @@ Integrated real document storage (AWS S3 / Cloudflare R2 with local fallback) in
 ## 3. Verification
 - `python -m py_compile` passed on `server/utils/storage.py`, `server/routes/analyze.py`, and `server/tests/test_storage.py`.
 - Fast non-blocking unit test verified round-trip upload, download, presigned URL resolution, and deletion.
+
