@@ -68,3 +68,4 @@ From the codebase mapping audit:
 2. **P0 Section Parsing Bug**: PDF/DOCX extractors collapse all whitespace (including newlines) with `\s+`, breaking line-based section segmentation in `resume_parser.py`.
 3. **P0 Quota Bypass**: Exception handler in `analyze.py` catches `HTTPException(403)` on scan limit checks and continues processing scans.
 4. **P1 Schema Alignment**: Sync remaining models (`Report`, `Payment`, `AuditLog`, `UsageLog`) between SQLAlchemy and database migrations.
+

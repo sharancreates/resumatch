@@ -1,9 +1,9 @@
+import os
 import nltk
 import re
 import threading
 import logging
-import spacy
-from spacy.matcher import PhraseMatcher
+
 import numpy as np
 from collections import OrderedDict
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -23,7 +23,10 @@ def download_nltk_resources():
             try:
                 nltk.data.find(f'corpora/{res}')
             except LookupError:
-                nltk.download(res, quiet=True)
+                try:
+                    nltk.download(res, quiet=True)
+                except Exception:
+                    pass
 
 download_nltk_resources()
 
@@ -73,43 +76,61 @@ class BoundedEmbeddingCache:
 
 _embedding_cache = BoundedEmbeddingCache(maxsize=128)
 
-# --- Model loading with explicit warning ---
+# --- Lazy thread-safe model loader ---
+_model_lock = threading.Lock()
+_model_initialized = False
 _model_loaded = False
 model = None
 tokenizer = None
 
-try:
-    # Attempt to load using standard PyTorch CPU feature extraction first
-    # to avoid fragile ONNX runtime C-level access violations on some architectures
-    import torch
-    from transformers import AutoTokenizer, AutoModel
-    model_id = "sentence-transformers/all-MiniLM-L6-v2"
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModel.from_pretrained(model_id)
-    _model_loaded = True
-    logger.info("Semantic model loaded successfully via PyTorch: %s", model_id)
-except Exception as e:
-    # If PyTorch fails, attempt ONNX fallback
-    try:
-        from optimum.onnxruntime import ORTModelForFeatureExtraction
-        from transformers import AutoTokenizer
-        model_id = "optimum/all-MiniLM-L6-v2"
-        tokenizer = AutoTokenizer.from_pretrained(model_id)
-        model = ORTModelForFeatureExtraction.from_pretrained(model_id)
-        _model_loaded = True
-        logger.info("Semantic model loaded successfully via ONNX: %s", model_id)
-    except Exception as e_onnx:
-        model = None
-        tokenizer = None
-        logger.warning(
-            "Failed to load semantic model: PyTorch error: %s | ONNX error: %s. "
-            "Semantic similarity will return 0 for all requests. "
-            "Only lexical scoring will be used.",
-            e, e_onnx
-        )
+def _get_model_and_tokenizer():
+    global model, tokenizer, _model_loaded, _model_initialized
+    if _model_initialized:
+        return model, tokenizer
+    with _model_lock:
+        if _model_initialized:
+            return model, tokenizer
+        try:
+            from transformers import AutoTokenizer, AutoModel
+            model_id = "sentence-transformers/all-MiniLM-L6-v2"
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(model_id, local_files_only=True)
+                model = AutoModel.from_pretrained(model_id, local_files_only=True)
+                _model_loaded = True
+                logger.info("Semantic model loaded from local cache: %s", model_id)
+            except Exception:
+                if os.environ.get("TRANSFORMERS_OFFLINE") != "1" and os.environ.get("HF_HUB_OFFLINE") != "1":
+                    tokenizer = AutoTokenizer.from_pretrained(model_id)
+                    model = AutoModel.from_pretrained(model_id)
+                    _model_loaded = True
+                    logger.info("Semantic model loaded via PyTorch: %s", model_id)
+        except Exception as e:
+            try:
+                from optimum.onnxruntime import ORTModelForFeatureExtraction
+                from transformers import AutoTokenizer
+                model_id = "optimum/all-MiniLM-L6-v2"
+                try:
+                    tokenizer = AutoTokenizer.from_pretrained(model_id, local_files_only=True)
+                    model = ORTModelForFeatureExtraction.from_pretrained(model_id, local_files_only=True)
+                    _model_loaded = True
+                except Exception:
+                    if os.environ.get("TRANSFORMERS_OFFLINE") != "1" and os.environ.get("HF_HUB_OFFLINE") != "1":
+                        tokenizer = AutoTokenizer.from_pretrained(model_id)
+                        model = ORTModelForFeatureExtraction.from_pretrained(model_id)
+                        _model_loaded = True
+            except Exception as e_onnx:
+                model = None
+                tokenizer = None
+                logger.warning(
+                    "Semantic model skipped (PyTorch: %s | ONNX: %s). Lexical fallback active.",
+                    e, e_onnx
+                )
+        _model_initialized = True
+        return model, tokenizer
 
 def is_model_loaded():
     """Expose model health status for the /health endpoint."""
+    _get_model_and_tokenizer()
     return _model_loaded
 
 def clean_and_tokenize(text_input):
@@ -122,7 +143,8 @@ def clean_and_tokenize(text_input):
     return [stemmer.stem(word) for word in tokens if word not in STOP_WORDS]
 
 def get_cached_embedding(text):
-    if model is None or not text.strip():
+    m, tok = _get_model_and_tokenizer()
+    if m is None or tok is None or not text.strip():
         return np.zeros(384)
 
     cache_key = hash(text)
@@ -136,14 +158,14 @@ def get_cached_embedding(text):
 
     try:
         import torch
-        inputs = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
+        inputs = tok(sentences, padding=True, truncation=True, return_tensors="pt")
         
         # Standard PyTorch model inference vs ONNX model inference
-        if 'ORTModel' not in model.__class__.__name__:
+        if 'ORTModel' not in m.__class__.__name__:
             with torch.no_grad():
-                outputs = model(**inputs)
+                outputs = m(**inputs)
         else:
-            outputs = model(**inputs)
+            outputs = m(**inputs)
             
         embeddings = outputs.last_hidden_state.numpy()
         sentence_embeddings = np.mean(embeddings, axis=1)
@@ -194,21 +216,21 @@ def _init_spacy():
     with _spacy_lock:
         if _nlp is None:
             try:
-                _nlp = spacy.load("en_core_web_sm")
-            except OSError:
-                from spacy.cli import download
+                import spacy
+                from spacy.matcher import PhraseMatcher
                 try:
+                    _nlp = spacy.load("en_core_web_sm")
+                except OSError:
+                    from spacy.cli import download
                     download("en_core_web_sm")
                     _nlp = spacy.load("en_core_web_sm")
-                except Exception as ex:
-                    logger.warning(f"Failed to download/load en_core_web_sm: {ex}")
-                    _nlp = None
-                    return None, None
-                    
-            _matcher = PhraseMatcher(_nlp.vocab, attr="LOWER")
-            patterns = [_nlp.make_doc(skill) for skill in COMMON_SKILLS]
-            _matcher.add("SKILLS", patterns)
-            
+                _matcher = PhraseMatcher(_nlp.vocab, attr="LOWER")
+                patterns = [_nlp.make_doc(skill) for skill in COMMON_SKILLS]
+                _matcher.add("SKILLS", patterns)
+            except Exception as ex:
+                logger.warning(f"SpaCy not available: {ex}. Using regex fallback.")
+                _nlp = None
+                _matcher = None
         return _nlp, _matcher
 
 def extract_skills_and_entities(text):

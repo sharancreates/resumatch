@@ -84,3 +84,4 @@
 | **FR-BILL-02**| Stripe Webhook Event Handlers | P1 | In Progress | Milestone 2 |
 | **FR-BILL-03**| Customer Billing Portal Redirect | P1 | Pending | Milestone 2 |
 | **FR-BILL-04**| Scan Quota Enforcement | P0 | Needs Fix (quota bypass bug)| Phase 1: Stabilization |
+

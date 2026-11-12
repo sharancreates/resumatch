@@ -1,5 +1,8 @@
 import os
-import stripe
+try:
+    import stripe
+except ImportError:
+    stripe = None
 import uuid
 import logging
 from datetime import datetime, timezone, timedelta
@@ -13,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 billing_router = APIRouter(prefix="/api/billing", tags=["billing"])
 
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+if stripe:
+    stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 @billing_router.post('/checkout-session')
 def create_checkout_session(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -22,7 +26,7 @@ def create_checkout_session(user: User = Depends(get_current_user), db: Session 
         domain_url = os.environ.get('CLIENT_URL', 'http://localhost:5173')
         
         # Fallback to mock session details if Stripe credentials are unset
-        if not stripe.api_key or not price_id:
+        if not stripe or not stripe.api_key or not price_id:
             return {
                 "status": "mock",
                 "message": "Stripe credentials not configured. Please use mock upgrade.",

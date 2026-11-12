@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from models import User, Resume, ResumeVersion, JobDescription, Analysis, Membership
-from services.ai_engine import hybrid_match_score, is_model_loaded
 from utils.pdf_parser import parse_pdf
 from utils.docx_parser import parse_docx
 from utils.resume_parser import parse_resume_structure
@@ -45,6 +44,7 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
             raise HTTPException(status_code=400, detail="Input too long. Max 20,000 characters.")
 
         # Calculate scores
+        from services.ai_engine import hybrid_match_score
         final_score, missing_keywords, lexical_score, semantic_score = hybrid_match_score(resume_text, job_text)
 
         # Parse resume structure
@@ -450,6 +450,7 @@ def export_report_endpoint(analysis_id: str, user: User = Depends(get_current_us
 
 @analyze_router.get('/health')
 def health_check():
+    from services.ai_engine import is_model_loaded
     model_status = "loaded" if is_model_loaded() else "unavailable"
     return {
         "status": "alive",
