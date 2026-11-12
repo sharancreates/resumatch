@@ -3,8 +3,8 @@
 ## 1. Project Health & Status
 
 - **Status**: Development
-- **Active Phase**: Phase 2 — Schema Alignment & Multi-Tenant Context Scoping
-- **Branch**: `phase-1`
+- **Active Phase**: Phase 2 — Schema Alignment & Multi-Tenant Context Scoping (Executed)
+- **Branch**: `phase-2`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -12,8 +12,8 @@
 
 ## 2. Immediate Blockers & Priorities
 
-1. **[P1] Schema Alignment**: Sync remaining models (`Report`, `Payment`, `AuditLog`, `UsageLog`) between SQLAlchemy and database migrations.
-2. **[P1] Multi-Tenancy Scoping**: Enforce `organization_id` scoping on all resume queries and analysis history.
+1. **[P0] Phase 2 UAT**: Verify Phase 2 multi-tenant context and schema alignment via conversational UAT (`/gsd-verify-work phase 2`).
+2. **[P1] Phase 3 Planning**: Plan Phase 3 — Storage & Report Delivery.
 
 ---
 
@@ -25,10 +25,11 @@
 - **2026-11-12: Phase 1 Plans Created**: Decomposed Phase 1 into 2 executable plans: `01-01-PLAN.md` (Boot Blocker, Quota Bypass, Dependencies) and `01-02-PLAN.md` (Parser Newline Preservation & Test Verification).
 - **2026-11-12: Phase 1 UAT Verified**: 4/4 acceptance criteria passed (Server boot, parser newline preservation, scan quota enforcement, and lazy model loading).
 - **2026-11-12: Phase 2 Plans Created**: Decomposed Phase 2 into `02-01-PLAN.md` (Schema Alignment, Clean Migrations) and `02-02-PLAN.md` (Multi-Tenant Context Dependency, Query Scoping & Audit Logging). Branch `phase-2` created.
+- **2026-11-12: Phase 2 Executed**: Purged dead `Workspace` models and references, created `Report` model and `UsageLog.organization_id`, generated Alembic migration `c1a9d8e7f6b5`, implemented `get_current_organization` / `TenantContext`, scoped scans and history to active org, and wired `AuditLog` for team and API key management.
 
 ---
 
 ## 4. Next Action
 
-Execute Phase 2 plans via `/gsd-execute-phase 2` (or `--interactive`).
+Conduct UAT verification via `/gsd-verify-work phase 2`.
 

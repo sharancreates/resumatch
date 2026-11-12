@@ -2,10 +2,10 @@ import uuid
 import secrets
 import hashlib
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from models import User, Organization, Membership, ApiKey, Subscription
+from models import User, Organization, Membership, ApiKey, Subscription, AuditLog
 from utils.db import get_db
 from utils.auth_helper import get_current_user
 
@@ -115,7 +115,7 @@ def get_org_members(org_id: str, user: User = Depends(get_current_user), db: Ses
     return {"status": "success", "data": members_list}
 
 @teams_router.post('/orgs/{org_id}/members')
-def invite_member(org_id: str, req: InviteMemberRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def invite_member(org_id: str, req: InviteMemberRequest, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Check if user is OWNER or ADMIN of this organization
     membership = db.query(Membership).filter(
         Membership.organization_id == org_id, 
@@ -158,6 +158,19 @@ def invite_member(org_id: str, req: InviteMemberRequest, user: User = Depends(ge
             role=req.role
         )
         db.add(new_membership)
+
+        audit_log = AuditLog(
+            id=str(uuid.uuid4()),
+            organization_id=org_id,
+            actor_id=user.id,
+            action="INVITE_MEMBER",
+            target_type="MEMBERSHIP",
+            target_id=new_membership.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent", "")[:256]
+        )
+        db.add(audit_log)
+
         db.commit()
         return {
             "status": "success",
@@ -168,12 +181,14 @@ def invite_member(org_id: str, req: InviteMemberRequest, user: User = Depends(ge
                 "role": req.role
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 @teams_router.delete('/orgs/{org_id}/members/{membership_id}')
-def remove_member(org_id: str, membership_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def remove_member(org_id: str, membership_id: str, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Check if user is OWNER or ADMIN
     actor_membership = db.query(Membership).filter(
         Membership.organization_id == org_id, 
@@ -197,12 +212,26 @@ def remove_member(org_id: str, membership_id: str, user: User = Depends(get_curr
         raise HTTPException(status_code=403, detail="Forbidden. Admins cannot remove organization owners.")
 
     try:
+        audit_log = AuditLog(
+            id=str(uuid.uuid4()),
+            organization_id=org_id,
+            actor_id=user.id,
+            action="REMOVE_MEMBER",
+            target_type="MEMBERSHIP",
+            target_id=target_membership.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent", "")[:256]
+        )
+        db.add(audit_log)
+
         db.delete(target_membership)
         db.commit()
         return {
             "status": "success",
             "message": "Member removed successfully."
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -228,7 +257,13 @@ def get_user_apikeys(user: User = Depends(get_current_user), db: Session = Depen
         raise HTTPException(status_code=500, detail=str(e))
 
 @teams_router.post('/apikeys')
-def create_apikey(req: CreateApiKeyRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_apikey(
+    req: CreateApiKeyRequest,
+    request: Request,
+    x_organization_id: str | None = Header(None, alias="X-Organization-Id"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     if not req.name.strip():
         raise HTTPException(status_code=400, detail="Key name is required.")
 
@@ -254,6 +289,31 @@ def create_apikey(req: CreateApiKeyRequest, user: User = Depends(get_current_use
             scopes=["read", "write"]
         )
         db.add(new_key)
+
+        # Audit log if organization context exists
+        target_org_id = None
+        if x_organization_id:
+            mem = db.query(Membership).filter(Membership.user_id == user.id, Membership.organization_id == x_organization_id).first()
+            if mem:
+                target_org_id = mem.organization_id
+        if not target_org_id:
+            mem = db.query(Membership).filter(Membership.user_id == user.id).first()
+            if mem:
+                target_org_id = mem.organization_id
+
+        if target_org_id:
+            audit_log = AuditLog(
+                id=str(uuid.uuid4()),
+                organization_id=target_org_id,
+                actor_id=user.id,
+                action="CREATE_API_KEY",
+                target_type="API_KEY",
+                target_id=new_key.id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent", "")[:256]
+            )
+            db.add(audit_log)
+
         db.commit()
         
         return {
@@ -266,23 +326,102 @@ def create_apikey(req: CreateApiKeyRequest, user: User = Depends(get_current_use
                 "raw_key": raw_key # Returned once to user
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 @teams_router.delete('/apikeys/{key_id}')
-def revoke_apikey(key_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def revoke_apikey(
+    key_id: str,
+    request: Request,
+    x_organization_id: str | None = Header(None, alias="X-Organization-Id"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     key = db.query(ApiKey).filter(ApiKey.id == key_id, ApiKey.user_id == user.id).first()
     if not key:
         raise HTTPException(status_code=404, detail="API key not found.")
         
     try:
+        target_org_id = None
+        if x_organization_id:
+            mem = db.query(Membership).filter(Membership.user_id == user.id, Membership.organization_id == x_organization_id).first()
+            if mem:
+                target_org_id = mem.organization_id
+        if not target_org_id:
+            mem = db.query(Membership).filter(Membership.user_id == user.id).first()
+            if mem:
+                target_org_id = mem.organization_id
+
+        if target_org_id:
+            audit_log = AuditLog(
+                id=str(uuid.uuid4()),
+                organization_id=target_org_id,
+                actor_id=user.id,
+                action="REVOKE_API_KEY",
+                target_type="API_KEY",
+                target_id=key.id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent", "")[:256]
+            )
+            db.add(audit_log)
+
         db.delete(key)
         db.commit()
         return {
             "status": "success",
             "message": "API key revoked successfully."
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@teams_router.get('/orgs/{org_id}/audit-logs')
+def get_org_audit_logs(
+    org_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    membership = db.query(Membership).filter(
+        Membership.organization_id == org_id,
+        Membership.user_id == user.id,
+        Membership.role.in_(["OWNER", "ADMIN"])
+    ).first()
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Only organization owners or administrators can view audit logs."
+        )
+
+    query = db.query(AuditLog).filter(AuditLog.organization_id == org_id).order_by(AuditLog.created_at.desc())
+    total = query.count()
+    logs = query.offset(offset).limit(min(limit, 100)).all()
+
+    return {
+        "status": "success",
+        "data": {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "logs": [
+                {
+                    "id": log.id,
+                    "organization_id": log.organization_id,
+                    "actor_id": log.actor_id,
+                    "action": log.action,
+                    "target_type": log.target_type,
+                    "target_id": log.target_id,
+                    "ip_address": log.ip_address,
+                    "user_agent": log.user_agent,
+                    "created_at": log.created_at.isoformat() if log.created_at else None
+                }
+                for log in logs
+            ]
+        }
+    }
