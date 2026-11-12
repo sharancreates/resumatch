@@ -1,7 +1,7 @@
 {
   "project": "ResuMatch AI",
   "version": "1.0.0",
-  "language": "python/javascript",
+  "language": "python"
   "frameworks": {
     "backend": "FastAPI",
     "frontend": "React",
