@@ -6,8 +6,8 @@ import logging
 import requests
 from io import BytesIO
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import StreamingResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -17,6 +17,7 @@ from utils.docx_parser import parse_docx
 from utils.resume_parser import parse_resume_structure
 from utils.db import get_db
 from utils.auth_helper import get_current_user, get_current_user_optional, get_tenant_context_optional, TenantContext
+from utils.storage import upload_file, download_file, generate_presigned_url, is_cloud_storage_configured, LOCAL_UPLOAD_DIR
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -30,6 +31,7 @@ analyze_router = APIRouter(prefix="/api", tags=["analyze"])
 class AnalyzeRequest(BaseModel):
     resume: str
     job: str
+    file_url: str | None = None
 
 @analyze_router.post('/analyze')
 def analyze_endpoint(
@@ -110,7 +112,7 @@ def analyze_endpoint(
                     id=str(uuid.uuid4()),
                     resume_id=resume.id,
                     version=version_count + 1,
-                    file_url="database-direct",
+                    file_url=req.file_url or "database-direct",
                     resume_text=resume_text,
                     parsed_json=structure
                 )
@@ -297,17 +299,192 @@ async def parse_pdf_endpoint(file: UploadFile = File(...)):
             if not header.startswith(b'%PDF'):
                 raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid PDF.")
             text = parse_pdf(stream)
+            content_type = file.content_type or "application/pdf"
         else:
             if not header.startswith(b'PK\x03\x04'):
                 raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid DOCX document.")
             text = parse_docx(stream)
+            content_type = file.content_type or "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         
-        return {"status": "success", "text": text}
+        file_url = upload_file(content, file.filename, content_type)
+        return {"status": "success", "text": text, "file_url": file_url}
     except HTTPException as he:
         raise he
     except Exception as e:
         logger.error(f"File Parse Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to parse file. Document may be corrupted.")
+
+@analyze_router.post('/resumes/upload')
+async def upload_resume_file(
+    file: UploadFile = File(...),
+    title: str = Form("Uploaded Resume"),
+    tenant: TenantContext = Depends(get_tenant_context_optional),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    filename_lower = file.filename.lower()
+    if not (filename_lower.endswith('.pdf') or filename_lower.endswith('.docx')):
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF or DOCX file.")
+
+    try:
+        content = await file.read()
+        header = content[:4]
+        stream = BytesIO(content)
+
+        if filename_lower.endswith('.pdf'):
+            if not header.startswith(b'%PDF'):
+                raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid PDF.")
+            text = parse_pdf(stream)
+            content_type = file.content_type or "application/pdf"
+        else:
+            if not header.startswith(b'PK\x03\x04'):
+                raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid DOCX document.")
+            text = parse_docx(stream)
+            content_type = file.content_type or "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+        structure = parse_resume_structure(text)
+        file_url = upload_file(content, file.filename, content_type)
+
+        org_id = tenant.organization_id
+
+        # Find or create user's resume container
+        if org_id:
+            resume = db.query(Resume).filter(
+                Resume.user_id == user.id,
+                Resume.organization_id == org_id,
+                Resume.is_archived == False
+            ).first()
+        else:
+            resume = db.query(Resume).filter(
+                Resume.user_id == user.id,
+                Resume.is_archived == False
+            ).first()
+
+        if not resume:
+            resume = Resume(
+                id=str(uuid.uuid4()),
+                user_id=user.id,
+                organization_id=org_id,
+                title=title
+            )
+            db.add(resume)
+            db.flush()
+
+        version_count = db.query(ResumeVersion).filter(ResumeVersion.resume_id == resume.id).count()
+        resume_version = ResumeVersion(
+            id=str(uuid.uuid4()),
+            resume_id=resume.id,
+            version=version_count + 1,
+            file_url=file_url,
+            resume_text=text,
+            parsed_json=structure
+        )
+        db.add(resume_version)
+        db.commit()
+
+        return {
+            "status": "success",
+            "data": {
+                "resume_id": resume.id,
+                "version_id": resume_version.id,
+                "version": resume_version.version,
+                "title": resume.title,
+                "file_url": file_url,
+                "structure": structure,
+                "text_length": len(text)
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Resume Upload Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to upload and process resume.")
+
+@analyze_router.get('/resumes/{resume_id}/versions/{version_id}/download')
+def download_resume_version(
+    resume_id: str,
+    version_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        resume = db.query(Resume).filter(Resume.id == resume_id).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="Resume record not found.")
+
+        # Tenancy access check
+        is_owner = (resume.user_id == user.id)
+        is_member = False
+        if resume.organization_id:
+            membership = db.query(Membership).filter(
+                Membership.organization_id == resume.organization_id,
+                Membership.user_id == user.id
+            ).first()
+            if membership:
+                is_member = True
+
+        if not (is_owner or is_member):
+            raise HTTPException(status_code=403, detail="Forbidden. You do not have access to this resume.")
+
+        version = db.query(ResumeVersion).filter(
+            ResumeVersion.id == version_id,
+            ResumeVersion.resume_id == resume_id
+        ).first()
+        if not version:
+            raise HTTPException(status_code=404, detail="Resume version not found.")
+
+        if not version.file_url or version.file_url == "database-direct":
+            return StreamingResponse(
+                BytesIO(version.resume_text.encode('utf-8')),
+                media_type="text/plain",
+                headers={"Content-Disposition": f"attachment; filename=resume_{resume_id}_v{version.version}.txt"}
+            )
+
+        if is_cloud_storage_configured() and not version.file_url.startswith("/api/uploads/"):
+            presigned = generate_presigned_url(version.file_url)
+            return RedirectResponse(url=presigned, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+        file_bytes = download_file(version.file_url)
+        ext = os.path.splitext(version.file_url)[1] or ".pdf"
+        media_type = "application/pdf" if ext.lower() == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        return StreamingResponse(
+            BytesIO(file_bytes),
+            media_type=media_type,
+            headers={"Content-Disposition": f"attachment; filename=resume_{resume_id}_v{version.version}{ext}"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume Download Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to download resume version.")
+
+@analyze_router.get('/uploads/{filename}')
+def serve_uploaded_file(filename: str):
+    # Defense against directory traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid file path.")
+
+    local_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
+    if not os.path.exists(local_path):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext == ".pdf":
+        media_type = "application/pdf"
+    elif ext == ".docx":
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    else:
+        media_type = "application/octet-stream"
+
+    with open(local_path, "rb") as f:
+        data = f.read()
+
+    return StreamingResponse(
+        BytesIO(data),
+        media_type=media_type,
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
 
 @analyze_router.get('/analyze/{analysis_id}/suggestions')
 def get_bullet_suggestions(analysis_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
