@@ -35,3 +35,4 @@ Aligned SQLAlchemy models (`server/models.py`) and Prisma schemas (`prisma/schem
 - `python -m py_compile server/alembic/versions/c1a9d8e7f6b5_add_reports_and_org_usage.py` passed with exit code 0.
 - Model reflection check verifying `hasattr(Report, 'organization_id')`, `hasattr(UsageLog, 'organization_id')`, and `not hasattr(Resume, 'workspace_id')` passed.
 - `alembic heads` executed from `server/` successfully resolved `c1a9d8e7f6b5 (head)`.
+

@@ -21,13 +21,13 @@
 - [x] **Task 1.4**: Update `server/requirements.txt` to include missing runtime and testing packages (`boto3`, `requests`, `alembic`, `pytest`, `httpx`).
 - [x] **Task 1.5**: Verify full test suite passes with `pytest`.
 
-### Phase 2: Schema Alignment & Multi-Tenant Context Scoping
+### Phase 2: Schema Alignment & Multi-Tenant Context Scoping [COMPLETED]
 **Goal**: Align database models and enforce strict organization-level data scoping.
-- [ ] **Task 2.1**: Synchronize `server/models.py` with `prisma/schema.prisma` (add `Report`, `UsageLog`, `AuditLog`, and resolve any deprecated `Workspace` remnants).
-- [ ] **Task 2.2**: Generate and verify Alembic migrations for new models and field updates.
-- [ ] **Task 2.3**: Implement FastAPI dependency to resolve and validate active `organization_id` header or session context.
-- [ ] **Task 2.4**: Scope all resume analysis queries, scan history listings, and deletions to the active organization.
-- [ ] **Task 2.5**: Wire audit logging on organization membership changes, API key operations, and quota updates.
+- [x] **Task 2.1**: Synchronize `server/models.py` with `prisma/schema.prisma` (add `Report`, `UsageLog`, `AuditLog`, and resolve any deprecated `Workspace` remnants).
+- [x] **Task 2.2**: Generate and verify Alembic migrations for new models and field updates.
+- [x] **Task 2.3**: Implement FastAPI dependency to resolve and validate active `organization_id` header or session context.
+- [x] **Task 2.4**: Scope all resume analysis queries, scan history listings, and deletions to the active organization.
+- [x] **Task 2.5**: Wire audit logging on organization membership changes, API key operations, and quota updates.
 
 ### Phase 3: Cloud Storage Integration & Shareable Reports
 **Goal**: Store real resume documents and persist shareable ATS evaluation reports.

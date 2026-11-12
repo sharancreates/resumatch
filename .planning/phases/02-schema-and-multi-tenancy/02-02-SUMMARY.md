@@ -34,3 +34,4 @@ Implemented organizational multi-tenancy dependency injection, scoped resume sca
 ## 3. Verification
 - `python -m py_compile` passed cleanly on `server/utils/auth_helper.py`, `server/routes/analyze.py`, and `server/routes/teams.py`.
 - Unit tests verified `TenantContext` properties, `require_role` rejection logic (403), and all model column bindings for `AuditLog`, `UsageLog`, and `Report`.
+

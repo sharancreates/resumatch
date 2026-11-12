@@ -52,3 +52,4 @@ def downgrade() -> None:
 
     # Drop reports table
     op.drop_table('reports')
+
