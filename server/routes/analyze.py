@@ -127,6 +127,8 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
                 db.add(analysis)
                 db.commit()
                 analysis_id = analysis.id
+            except HTTPException:
+                raise
             except Exception as db_err:
                 db.rollback()
                 logger.error(f"Failed to save analysis to DB: {str(db_err)}")
@@ -145,6 +147,8 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
                 "structure": structure
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Analysis Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal processing error.")
