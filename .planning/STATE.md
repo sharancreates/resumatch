@@ -3,8 +3,8 @@
 ## 1. Project Health & Status
 
 - **Status**: Development
-- **Active Phase**: Phase 3 — Cloud Storage Integration & Shareable Reports (Completed & Verified)
-- **Branch**: `phase-3`
+- **Active Phase**: Phase 4 — Razorpay Billing Lifecycle & Access Guardrails (Planned)
+- **Branch**: `phase-4`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -12,7 +12,7 @@
 
 ## 2. Immediate Blockers & Priorities
 
-1. **[P1] Phase 4 Planning**: Plan Phase 4 — Stripe Billing Lifecycle & Access Guardrails (`/gsd-plan-phase 4`).
+1. **[P1] Phase 4 Execution**: Execute Phase 4 — Razorpay Billing & Access Guardrails (`/gsd-execute-phase 4`).
 2. **[P2] Phase 5 Production Hardening**: Threadpool offloading for ML inference, Redis caching, CI/CD.
 
 ---
@@ -30,10 +30,11 @@
 - **2026-11-12: Phase 3 Plans Created**: Decomposed Phase 3 into `03-01-PLAN.md` (Cloud Storage Integration & Secure Resume Downloads) and `03-02-PLAN.md` (Shareable Reports & Persistent Evaluation Records). Branch `phase-3` created.
 - **2026-11-12: Phase 3 Executed**: Added S3 presigned URLs and deletion in `storage.py`, connected `upload_file` to `parse_pdf_endpoint` and `analyze_endpoint` (eliminating `"database-direct"` placeholder), added `POST /api/resumes/upload`, authenticated downloads at `/api/resumes/{id}/versions/{vid}/download`, extracted `report_generator.py`, implemented `reports_router` with persistent `Report` records and shareable links, and registered in `app.py`.
 - **2026-11-12: Phase 3 UAT Verified**: 5/5 acceptance criteria passed (Storage presigned URLs, real resume file storage, authenticated downloads with traversal defenses, ReportLab generator service, and persistent shareable reports router).
+- **2026-11-12: Phase 4 Pivoted to Razorpay**: Swapped payment provider requirement from Stripe to Razorpay per user direction. Created `04-01-PLAN.md` (Razorpay models, order creation, HMAC signature verification) and `04-02-PLAN.md` (Razorpay webhooks, security guardrails). Branch `phase-4` created.
 
 ---
 
 ## 4. Next Action
 
-Plan Phase 4 via `/gsd-plan-phase 4`.
+Execute Phase 4 plans via `/gsd-execute-phase 4`.
 
