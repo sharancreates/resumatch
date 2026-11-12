@@ -11,12 +11,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from models import User, Resume, ResumeVersion, JobDescription, Analysis, Membership
+from models import User, Resume, ResumeVersion, JobDescription, Analysis, Membership, UsageLog, AuditLog, Organization
 from utils.pdf_parser import parse_pdf
 from utils.docx_parser import parse_docx
 from utils.resume_parser import parse_resume_structure
 from utils.db import get_db
-from utils.auth_helper import get_current_user, get_current_user_optional
+from utils.auth_helper import get_current_user, get_current_user_optional, get_tenant_context_optional, TenantContext
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -32,7 +32,12 @@ class AnalyzeRequest(BaseModel):
     job: str
 
 @analyze_router.post('/analyze')
-def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_current_user_optional), db: Session = Depends(get_db)):
+def analyze_endpoint(
+    req: AnalyzeRequest,
+    tenant: TenantContext = Depends(get_tenant_context_optional),
+    user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     try:
         resume_text = req.resume
         job_text = req.job
@@ -62,12 +67,21 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
         analysis_id = None
         if user:
             try:
-                # Find user's active membership
-                membership = db.query(Membership).filter(Membership.user_id == user.id).first()
-                org_id = membership.organization_id if membership else None
+                org_id = tenant.organization_id
 
-                # 1. Fetch or create user's default resume container
-                resume = db.query(Resume).filter(Resume.user_id == user.id, Resume.is_archived == False).first()
+                # 1. Fetch or create user's resume container scoped to organization if present
+                if org_id:
+                    resume = db.query(Resume).filter(
+                        Resume.user_id == user.id,
+                        Resume.organization_id == org_id,
+                        Resume.is_archived == False
+                    ).first()
+                else:
+                    resume = db.query(Resume).filter(
+                        Resume.user_id == user.id,
+                        Resume.is_archived == False
+                    ).first()
+
                 if not resume:
                     resume = Resume(
                         id=str(uuid.uuid4()),
@@ -76,6 +90,9 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
                         title="My Default Resume"
                     )
                     db.add(resume)
+                    db.flush()
+                elif org_id and not resume.organization_id:
+                    resume.organization_id = org_id
                     db.flush()
 
                 # Enforce free tier scan limit (10 scans)
@@ -125,6 +142,17 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
                     recommendations=recommendations
                 )
                 db.add(analysis)
+
+                # 5. Record UsageLog for multi-tenant scan accounting
+                usage_log = UsageLog(
+                    id=str(uuid.uuid4()),
+                    user_id=user.id,
+                    organization_id=org_id,
+                    endpoint="/api/analyze",
+                    scans_used=1
+                )
+                db.add(usage_log)
+
                 db.commit()
                 analysis_id = analysis.id
             except HTTPException:
@@ -154,14 +182,37 @@ def analyze_endpoint(req: AnalyzeRequest, user: User | None = Depends(get_curren
         raise HTTPException(status_code=500, detail="Internal processing error.")
 
 @analyze_router.get('/history')
-def get_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_history(
+    organization_id: str | None = None,
+    x_organization_id: str | None = Header(None, alias="X-Organization-Id"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     try:
-        # Find user's resume container
-        resume = db.query(Resume).filter(Resume.user_id == user.id, Resume.is_archived == False).first()
-        if not resume:
+        target_org_id = organization_id or x_organization_id
+        if target_org_id:
+            membership = db.query(Membership).filter(
+                Membership.organization_id == target_org_id,
+                Membership.user_id == user.id
+            ).first()
+            if not membership:
+                raise HTTPException(status_code=403, detail="Forbidden. Not a member of this organization.")
+
+            resumes = db.query(Resume).filter(
+                Resume.organization_id == target_org_id,
+                Resume.is_archived == False
+            ).all()
+        else:
+            resumes = db.query(Resume).filter(
+                Resume.user_id == user.id,
+                Resume.is_archived == False
+            ).all()
+
+        resume_ids = [r.id for r in resumes]
+        if not resume_ids:
             return {"status": "success", "data": []}
 
-        analyses = db.query(Analysis).filter(Analysis.resume_id == resume.id).order_by(Analysis.created_at.desc()).all()
+        analyses = db.query(Analysis).filter(Analysis.resume_id.in_(resume_ids)).order_by(Analysis.created_at.desc()).all()
         
         # Format results matching react client expectation
         history_list = []
@@ -172,14 +223,14 @@ def get_history(user: User = Depends(get_current_user), db: Session = Depends(ge
             
             history_list.append({
                 "id": a.id,
-                "user_id": user.id,
+                "user_id": a.resume.user_id if a.resume else user.id,
                 "resume_text": version.resume_text if version else "",
                 "job_description": job.job_text if job else "",
                 "score": a.score,
                 "lexical_score": a.lexical_score,
                 "semantic_score": a.semantic_score,
-                "missing_keywords": json.dumps(a.missing_keywords),
-                "resume_structure": json.dumps(version.parsed_json if version else {}),
+                "missing_keywords": json.dumps(a.missing_keywords) if isinstance(a.missing_keywords, (list, dict)) else str(a.missing_keywords),
+                "resume_structure": json.dumps(version.parsed_json if version and version.parsed_json else {}),
                 "created_at": a.created_at.isoformat() if a.created_at else None
             })
             
@@ -187,6 +238,8 @@ def get_history(user: User = Depends(get_current_user), db: Session = Depends(ge
             "status": "success",
             "data": history_list
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Fetch History Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch history.")
@@ -194,21 +247,36 @@ def get_history(user: User = Depends(get_current_user), db: Session = Depends(ge
 @analyze_router.delete('/history/{analysis_id}')
 def delete_history_item(analysis_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        # Locate the user's resumes
-        resume = db.query(Resume).filter(Resume.user_id == user.id).first()
-        if not resume:
-            raise HTTPException(status_code=404, detail="Analysis record not found.")
-
-        analysis = db.query(Analysis).filter(Analysis.id == analysis_id, Analysis.resume_id == resume.id).first()
+        analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Analysis record not found.")
-        
+
+        resume = db.query(Resume).filter(Resume.id == analysis.resume_id).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="Associated resume record not found.")
+
+        is_owner = (resume.user_id == user.id)
+        is_org_admin = False
+        if resume.organization_id:
+            membership = db.query(Membership).filter(
+                Membership.organization_id == resume.organization_id,
+                Membership.user_id == user.id,
+                Membership.role.in_(["OWNER", "ADMIN"])
+            ).first()
+            if membership:
+                is_org_admin = True
+
+        if not (is_owner or is_org_admin):
+            raise HTTPException(status_code=403, detail="Forbidden. You do not have permission to delete this analysis.")
+
         db.delete(analysis)
         db.commit()
         return {
             "status": "success",
             "message": "Analysis history item deleted."
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"Delete History Error: {str(e)}")
@@ -248,9 +316,22 @@ def get_bullet_suggestions(analysis_id: str, user: User = Depends(get_current_us
         if not analysis:
             raise HTTPException(status_code=404, detail="Analysis record not found")
 
-        # Double check owner access
-        resume = db.query(Resume).filter(Resume.id == analysis.resume_id, Resume.user_id == user.id).first()
+        # Double check owner access or organization membership access
+        resume = db.query(Resume).filter(Resume.id == analysis.resume_id).first()
         if not resume:
+            raise HTTPException(status_code=404, detail="Associated resume record not found")
+
+        is_owner = (resume.user_id == user.id)
+        is_member = False
+        if resume.organization_id:
+            mem = db.query(Membership).filter(
+                Membership.organization_id == resume.organization_id,
+                Membership.user_id == user.id
+            ).first()
+            if mem:
+                is_member = True
+
+        if not (is_owner or is_member):
             raise HTTPException(status_code=403, detail="Forbidden.")
 
         if not user.is_premium:

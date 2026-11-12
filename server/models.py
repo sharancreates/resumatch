@@ -64,10 +64,11 @@ class Organization(Base):
 
     # Relationships
     memberships = relationship('Membership', back_populates='organization', cascade='all, delete-orphan')
-    workspaces = relationship('Workspace', back_populates='organization', cascade='all, delete-orphan')
     subscription = relationship('Subscription', back_populates='organization', uselist=False, cascade='all, delete-orphan')
     resumes = relationship('Resume', back_populates='organization')
     job_descriptions = relationship('JobDescription', back_populates='organization')
+    reports = relationship('Report', back_populates='organization', cascade='all, delete-orphan')
+    usage_logs = relationship('UsageLog', back_populates='organization', cascade='all, delete-orphan')
     audit_logs = relationship('AuditLog', back_populates='organization', cascade='all, delete-orphan')
 
 class Membership(Base):
@@ -84,19 +85,30 @@ class Membership(Base):
     organization = relationship('Organization', back_populates='memberships')
     user = relationship('User', back_populates='memberships')
 
-class Workspace(Base):
-    __tablename__ = 'workspaces'
+class Report(Base):
+    __tablename__ = 'reports'
 
     id = Column(String(36), primary_key=True)
     organization_id = Column(String(36), ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(String(256), nullable=True)
+    analysis_ids = Column(JSON, nullable=False) # JSON array of analysis IDs
+    pdf_url = Column(String(256), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    organization = relationship('Organization', back_populates='workspaces')
-    resumes = relationship('Resume', back_populates='workspace')
-    job_descriptions = relationship('JobDescription', back_populates='workspace')
+    organization = relationship('Organization', back_populates='reports')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "name": self.name,
+            "description": self.description,
+            "analysis_ids": self.analysis_ids,
+            "pdf_url": self.pdf_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
 
 class Resume(Base):
     __tablename__ = 'resumes'
@@ -104,7 +116,6 @@ class Resume(Base):
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     organization_id = Column(String(36), ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True)
-    workspace_id = Column(String(36), ForeignKey('workspaces.id', ondelete='SET NULL'), nullable=True)
     title = Column(String(100), nullable=False)
     is_archived = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -113,7 +124,6 @@ class Resume(Base):
     # Relationships
     user = relationship('User', back_populates='resumes')
     organization = relationship('Organization', back_populates='resumes')
-    workspace = relationship('Workspace', back_populates='resumes')
     versions = relationship('ResumeVersion', back_populates='resume', cascade='all, delete-orphan')
     analyses = relationship('Analysis', back_populates='resume', cascade='all, delete-orphan')
 
@@ -137,7 +147,6 @@ class JobDescription(Base):
 
     id = Column(String(36), primary_key=True)
     organization_id = Column(String(36), ForeignKey('organizations.id', ondelete='CASCADE'), nullable=True)
-    workspace_id = Column(String(36), ForeignKey('workspaces.id', ondelete='SET NULL'), nullable=True)
     title = Column(String(100), nullable=False)
     company_name = Column(String(100), nullable=True)
     job_text = Column(Text, nullable=False)
@@ -148,7 +157,6 @@ class JobDescription(Base):
 
     # Relationships
     organization = relationship('Organization', back_populates='job_descriptions')
-    workspace = relationship('Workspace', back_populates='job_descriptions')
     analyses = relationship('Analysis', back_populates='job_description', cascade='all, delete-orphan')
 
 class Analysis(Base):
@@ -230,12 +238,14 @@ class UsageLog(Base):
 
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    organization_id = Column(String(36), ForeignKey('organizations.id', ondelete='CASCADE'), nullable=True)
     endpoint = Column(String(100), nullable=False)
     scans_used = Column(Integer, default=1)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship('User', back_populates='usage_logs')
+    organization = relationship('Organization', back_populates='usage_logs')
 
 class AuditLog(Base):
     __tablename__ = 'audit_logs'

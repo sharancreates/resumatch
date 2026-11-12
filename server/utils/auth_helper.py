@@ -1,11 +1,26 @@
 import os
 import jwt
+from dataclasses import dataclass
+from typing import Optional, List
 from datetime import datetime, timedelta, timezone
 from fastapi import Header, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from models import User
+from models import User, Organization, Membership
 from utils.db import get_db
+
+@dataclass
+class TenantContext:
+    organization: Optional[Organization]
+    membership: Optional[Membership]
+
+    @property
+    def organization_id(self) -> Optional[str]:
+        return self.organization.id if self.organization else None
+
+    @property
+    def role(self) -> Optional[str]:
+        return self.membership.role if self.membership else None
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-resumatch-9821')
 ALGORITHM = 'HS256'
@@ -83,3 +98,66 @@ def get_current_user_optional(authorization: str = Header(None), db: Session = D
     except Exception:
         pass
     return None
+
+def get_current_organization(
+    x_organization_id: Optional[str] = Header(None, alias="X-Organization-Id"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> TenantContext:
+    if x_organization_id:
+        membership = db.query(Membership).filter(
+            Membership.user_id == user.id,
+            Membership.organization_id == x_organization_id
+        ).first()
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not a member of this organization"
+            )
+        org = db.query(Organization).filter(Organization.id == x_organization_id).first()
+        return TenantContext(organization=org, membership=membership)
+
+    # If X-Organization-Id is omitted, check user's default/first membership
+    membership = db.query(Membership).filter(Membership.user_id == user.id).first()
+    if membership:
+        org = db.query(Organization).filter(Organization.id == membership.organization_id).first()
+        return TenantContext(organization=org, membership=membership)
+
+    return TenantContext(organization=None, membership=None)
+
+def get_tenant_context_optional(
+    x_organization_id: Optional[str] = Header(None, alias="X-Organization-Id"),
+    user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+) -> TenantContext:
+    if not user:
+        return TenantContext(organization=None, membership=None)
+    if x_organization_id:
+        membership = db.query(Membership).filter(
+            Membership.user_id == user.id,
+            Membership.organization_id == x_organization_id
+        ).first()
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not a member of this organization"
+            )
+        org = db.query(Organization).filter(Organization.id == x_organization_id).first()
+        return TenantContext(organization=org, membership=membership)
+    membership = db.query(Membership).filter(Membership.user_id == user.id).first()
+    if membership:
+        org = db.query(Organization).filter(Organization.id == membership.organization_id).first()
+        return TenantContext(organization=org, membership=membership)
+    return TenantContext(organization=None, membership=None)
+
+def require_role(allowed_roles: List[str]):
+    def role_checker(
+        tenant: TenantContext = Depends(get_current_organization)
+    ) -> TenantContext:
+        if not tenant.membership or tenant.membership.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation requires one of the following roles: {', '.join(allowed_roles)}"
+            )
+        return tenant
+    return role_checker

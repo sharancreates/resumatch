@@ -13,21 +13,21 @@
 
 ## Phases & Milestones
 
-### Phase 1: Critical Stabilization & P0 Bug Fixes
+### Phase 1: Critical Stabilization & P0 Bug Fixes [COMPLETED]
 **Goal**: Resolve immediate showstoppers preventing backend execution, tests, and core resume parsing.
-- [ ] **Task 1.1**: Fix syntax error and unterminated string literal in `server/app.py` lines 48-50 so FastAPI can start.
-- [ ] **Task 1.2**: Fix whitespace collapse regex in `server/utils/pdf_parser.py` and `server/utils/docx_parser.py` to preserve newlines, restoring `resume_parser.py` section segmentation.
-- [ ] **Task 1.3**: Fix scan quota bypass in `server/routes/analyze.py` where `HTTPException(403)` is caught and suppressed by the generic `except Exception` handler.
-- [ ] **Task 1.4**: Update `server/requirements.txt` to include missing runtime and testing packages (`boto3`, `requests`, `alembic`, `pytest`, `httpx`).
-- [ ] **Task 1.5**: Verify full test suite passes with `pytest`.
+- [x] **Task 1.1**: Fix syntax error and unterminated string literal in `server/app.py` lines 48-50 so FastAPI can start.
+- [x] **Task 1.2**: Fix whitespace collapse regex in `server/utils/pdf_parser.py` and `server/utils/docx_parser.py` to preserve newlines, restoring `resume_parser.py` section segmentation.
+- [x] **Task 1.3**: Fix scan quota bypass in `server/routes/analyze.py` where `HTTPException(403)` is caught and suppressed by the generic `except Exception` handler.
+- [x] **Task 1.4**: Update `server/requirements.txt` to include missing runtime and testing packages (`boto3`, `requests`, `alembic`, `pytest`, `httpx`).
+- [x] **Task 1.5**: Verify full test suite passes with `pytest`.
 
-### Phase 2: Schema Alignment & Multi-Tenant Context Scoping
+### Phase 2: Schema Alignment & Multi-Tenant Context Scoping [COMPLETED]
 **Goal**: Align database models and enforce strict organization-level data scoping.
-- [ ] **Task 2.1**: Synchronize `server/models.py` with `prisma/schema.prisma` (add `Report`, `UsageLog`, `AuditLog`, and resolve any deprecated `Workspace` remnants).
-- [ ] **Task 2.2**: Generate and verify Alembic migrations for new models and field updates.
-- [ ] **Task 2.3**: Implement FastAPI dependency to resolve and validate active `organization_id` header or session context.
-- [ ] **Task 2.4**: Scope all resume analysis queries, scan history listings, and deletions to the active organization.
-- [ ] **Task 2.5**: Wire audit logging on organization membership changes, API key operations, and quota updates.
+- [x] **Task 2.1**: Synchronize `server/models.py` with `prisma/schema.prisma` (add `Report`, `UsageLog`, `AuditLog`, and resolve any deprecated `Workspace` remnants).
+- [x] **Task 2.2**: Generate and verify Alembic migrations for new models and field updates.
+- [x] **Task 2.3**: Implement FastAPI dependency to resolve and validate active `organization_id` header or session context.
+- [x] **Task 2.4**: Scope all resume analysis queries, scan history listings, and deletions to the active organization.
+- [x] **Task 2.5**: Wire audit logging on organization membership changes, API key operations, and quota updates.
 
 ### Phase 3: Cloud Storage Integration & Shareable Reports
 **Goal**: Store real resume documents and persist shareable ATS evaluation reports.

@@ -63,9 +63,10 @@ model Organization {
 
   // Multi-tenant configuration
   memberships     Membership[]
-  workspaces      Workspace[]
   subscription    Subscription?
   auditLogs       AuditLog[]
+  reports         Report[]
+  usageLogs       UsageLog[]
   resumes         Resume[]         // Organization-level shared resumes
   jobDescriptions JobDescription[] // Organization-level job descriptions
 }
@@ -85,25 +86,10 @@ model Membership {
   @@index([userId])
 }
 
-model Workspace {
-  id             String           @id @default(uuid())
-  organizationId String
-  name           String
-  description    String?
-  createdAt      DateTime         @default(now())
-
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  resumes        Resume[]
-  jobDescriptions JobDescription[]
-
-  @@index([organizationId])
-}
-
 model Resume {
   id             String          @id @default(uuid())
   userId         String          // Owner of the resume
   organizationId String?         // Optional: link to organization for shared recruitment libraries
-  workspaceId    String?         // Optional: associated workspace
   title          String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -111,7 +97,6 @@ model Resume {
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  workspace      Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   versions       ResumeVersion[]
   analyses       Analysis[]
 
@@ -138,7 +123,6 @@ model ResumeVersion {
 model JobDescription {
   id             String        @id @default(uuid())
   organizationId String?       // Optional for private logs
-  workspaceId    String?
   title          String
   companyName    String?
   jobText        String        @db.Text
@@ -148,7 +132,6 @@ model JobDescription {
   updatedAt      DateTime      @updatedAt
 
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  workspace      Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   analyses       Analysis[]
 
   @@index([organizationId])
@@ -178,14 +161,18 @@ model Analysis {
 }
 
 model Report {
-  id          String     @id @default(uuid())
-  name        String
-  description String?
-  analysisIds String[]   // References to compared analyses
-  pdfUrl      String?    // Cached PDF summary URL
-  createdAt   DateTime   @default(now())
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  description    String?
+  analysisIds    String[]     // References to compared analyses
+  pdfUrl         String?      // Cached PDF summary URL
+  createdAt      DateTime     @default(now())
 
-  analyses    Analysis[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  analyses       Analysis[]
+
+  @@index([organizationId])
 }
 
 model Subscription {
@@ -239,15 +226,18 @@ model ApiKey {
 }
 
 model UsageLog {
-  id           String   @id @default(uuid())
-  userId       String
-  endpoint     String
-  scansUsed    Int      @default(1)
-  createdAt    DateTime @default(now())
+  id             String        @id @default(uuid())
+  userId         String
+  organizationId String?
+  endpoint       String
+  scansUsed      Int           @default(1)
+  createdAt      DateTime      @default(now())
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
 }
 
 model Notification {
