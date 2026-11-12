@@ -13,13 +13,13 @@
 
 ## Phases & Milestones
 
-### Phase 1: Critical Stabilization & P0 Bug Fixes
+### Phase 1: Critical Stabilization & P0 Bug Fixes [COMPLETED]
 **Goal**: Resolve immediate showstoppers preventing backend execution, tests, and core resume parsing.
-- [ ] **Task 1.1**: Fix syntax error and unterminated string literal in `server/app.py` lines 48-50 so FastAPI can start.
-- [ ] **Task 1.2**: Fix whitespace collapse regex in `server/utils/pdf_parser.py` and `server/utils/docx_parser.py` to preserve newlines, restoring `resume_parser.py` section segmentation.
-- [ ] **Task 1.3**: Fix scan quota bypass in `server/routes/analyze.py` where `HTTPException(403)` is caught and suppressed by the generic `except Exception` handler.
-- [ ] **Task 1.4**: Update `server/requirements.txt` to include missing runtime and testing packages (`boto3`, `requests`, `alembic`, `pytest`, `httpx`).
-- [ ] **Task 1.5**: Verify full test suite passes with `pytest`.
+- [x] **Task 1.1**: Fix syntax error and unterminated string literal in `server/app.py` lines 48-50 so FastAPI can start.
+- [x] **Task 1.2**: Fix whitespace collapse regex in `server/utils/pdf_parser.py` and `server/utils/docx_parser.py` to preserve newlines, restoring `resume_parser.py` section segmentation.
+- [x] **Task 1.3**: Fix scan quota bypass in `server/routes/analyze.py` where `HTTPException(403)` is caught and suppressed by the generic `except Exception` handler.
+- [x] **Task 1.4**: Update `server/requirements.txt` to include missing runtime and testing packages (`boto3`, `requests`, `alembic`, `pytest`, `httpx`).
+- [x] **Task 1.5**: Verify full test suite passes with `pytest`.
 
 ### Phase 2: Schema Alignment & Multi-Tenant Context Scoping
 **Goal**: Align database models and enforce strict organization-level data scoping.
