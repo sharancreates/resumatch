@@ -6,8 +6,9 @@ import logging
 import requests
 from io import BytesIO
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import StreamingResponse, RedirectResponse
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -18,6 +19,7 @@ from utils.resume_parser import parse_resume_structure
 from utils.db import get_db
 from utils.auth_helper import get_current_user, get_current_user_optional, get_tenant_context_optional, TenantContext
 from utils.storage import upload_file, download_file, generate_presigned_url, is_cloud_storage_configured, LOCAL_UPLOAD_DIR
+from utils.limiter import limiter
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -34,7 +36,9 @@ class AnalyzeRequest(BaseModel):
     file_url: str | None = None
 
 @analyze_router.post('/analyze')
-def analyze_endpoint(
+@limiter.limit("20/minute")
+async def analyze_endpoint(
+    request: Request,
     req: AnalyzeRequest,
     tenant: TenantContext = Depends(get_tenant_context_optional),
     user: User | None = Depends(get_current_user_optional),
@@ -50,12 +54,14 @@ def analyze_endpoint(
         if len(resume_text) > 20000 or len(job_text) > 20000: 
             raise HTTPException(status_code=400, detail="Input too long. Max 20,000 characters.")
 
-        # Calculate scores
+        # Calculate scores offloaded from ASGI loop to threadpool
         from services.ai_engine import hybrid_match_score
-        final_score, missing_keywords, lexical_score, semantic_score = hybrid_match_score(resume_text, job_text)
+        final_score, missing_keywords, lexical_score, semantic_score = await run_in_threadpool(
+            hybrid_match_score, resume_text, job_text
+        )
 
-        # Parse resume structure
-        structure = parse_resume_structure(resume_text)
+        # Parse resume structure offloaded to threadpool
+        structure = await run_in_threadpool(parse_resume_structure, resume_text)
 
         # Generate placeholders for mock AI suggestions
         skills_gap = {
@@ -298,15 +304,15 @@ async def parse_pdf_endpoint(file: UploadFile = File(...)):
         if filename_lower.endswith('.pdf'):
             if not header.startswith(b'%PDF'):
                 raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid PDF.")
-            text = parse_pdf(stream)
+            text = await run_in_threadpool(parse_pdf, stream)
             content_type = file.content_type or "application/pdf"
         else:
             if not header.startswith(b'PK\x03\x04'):
                 raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid DOCX document.")
-            text = parse_docx(stream)
+            text = await run_in_threadpool(parse_docx, stream)
             content_type = file.content_type or "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         
-        file_url = upload_file(content, file.filename, content_type)
+        file_url = await run_in_threadpool(upload_file, content, file.filename, content_type)
         return {"status": "success", "text": text, "file_url": file_url}
     except HTTPException as he:
         raise he
@@ -334,16 +340,16 @@ async def upload_resume_file(
         if filename_lower.endswith('.pdf'):
             if not header.startswith(b'%PDF'):
                 raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid PDF.")
-            text = parse_pdf(stream)
+            text = await run_in_threadpool(parse_pdf, stream)
             content_type = file.content_type or "application/pdf"
         else:
             if not header.startswith(b'PK\x03\x04'):
                 raise HTTPException(status_code=400, detail="Invalid file signature. Uploaded file is not a valid DOCX document.")
-            text = parse_docx(stream)
+            text = await run_in_threadpool(parse_docx, stream)
             content_type = file.content_type or "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-        structure = parse_resume_structure(text)
-        file_url = upload_file(content, file.filename, content_type)
+        structure = await run_in_threadpool(parse_resume_structure, text)
+        file_url = await run_in_threadpool(upload_file, content, file.filename, content_type)
 
         org_id = tenant.organization_id
 

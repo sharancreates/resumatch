@@ -37,3 +37,4 @@ Aligned database models and Alembic migrations with Razorpay (replacing Stripe r
 - `python -m alembic heads` resolved head `d3e2f1a0b9c8`.
 - In-memory signature verification unit test verified valid and tampered signature checks.
 - RBAC guard confirmed 403 Forbidden for `VIEWER` roles and permitted for `ADMIN`/`OWNER`.
+

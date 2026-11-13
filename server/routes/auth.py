@@ -13,6 +13,7 @@ from utils.auth_helper import (
     encode_auth_token, 
     get_current_user
 )
+from utils.limiter import limiter
 
 auth_router = APIRouter(prefix="/api", tags=["authentication"])
 
@@ -33,7 +34,8 @@ class ProfileUpdateRequest(BaseModel):
     job_title: str | None = None
 
 @auth_router.post('/auth/register', status_code=status.HTTP_201_CREATED)
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def register(request: Request, req: RegisterRequest, db: Session = Depends(get_db)):
     email = req.email.strip().lower()
     password = req.password
 
@@ -112,7 +114,8 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @auth_router.post('/auth/login')
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, req: LoginRequest, db: Session = Depends(get_db)):
     email = req.email.strip().lower()
     password = req.password
 

@@ -3,8 +3,8 @@
 ## 1. Project Health & Status
 
 - **Status**: Development
-- **Active Phase**: Phase 4 — Razorpay Billing Lifecycle & Access Guardrails (Completed & Verified)
-- **Branch**: `phase-4`
+- **Active Phase**: Phase 5 — Production Hardening, Caching & ML Concurrency (Completed & Verified)
+- **Branch**: `phase-5`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -12,8 +12,8 @@
 
 ## 2. Immediate Blockers & Priorities
 
-1. **[P1] Phase 5 Planning & Execution**: Scale throughput, optimize latency, and prepare for high-concurrency production deployments (threadpool offloading, Redis caching, CI/CD).
-2. **[P2] Verification Sign-off**: Conclude Phase 4 verification review with developer.
+1. **[P1] Production Readiness Review**: Full milestone audit and verification of all 5 completed phases.
+2. **[P2] Deployment**: Merge feature branches to `main` and deploy.
 
 ---
 
@@ -32,10 +32,11 @@
 - **2026-11-12: Phase 3 UAT Verified**: 5/5 acceptance criteria passed (Storage presigned URLs, real resume file storage, authenticated downloads with traversal defenses, ReportLab generator service, and persistent shareable reports router).
 - **2026-11-12: Phase 4 Pivoted to Razorpay**: Swapped payment provider requirement from Stripe to Razorpay per user direction. Created `04-01-PLAN.md` (Razorpay models, order creation, HMAC signature verification) and `04-02-PLAN.md` (Razorpay webhooks, security guardrails). Branch `phase-4` created.
 - **2026-11-13: Phase 4 Executed & Verified**: Updated `Subscription` model with Razorpay attributes, added `Payment` ledger model, generated forward Alembic migration `d3e2f1a0b9c8`, implemented `POST /api/billing/order` with RBAC checks (`OWNER`/`ADMIN`), implemented cryptographic HMAC SHA-256 verification in `POST /api/billing/verify` and `POST /api/billing/webhook`, enforced production guardrails on `/mock-upgrade` and default JWT `SECRET_KEY`, and passed 5/5 UAT criteria.
+- **2026-11-13: Phase 5 Executed & Verified**: Offloaded Sentence-Transformers ML inference and resume parsing to worker threads via Starlette `run_in_threadpool`, added `RedisEmbeddingCache` with automatic fallback to bounded LRU cache, integrated `slowapi` rate limiting with middleware and error handlers in FastAPI, configured Rollup manual vendor chunking in Vite, set up Vitest testing harness with component tests, created GitHub Actions automated CI workflow in `.github/workflows/ci.yml`, and passed 4/4 UAT criteria.
 
 ---
 
 ## 4. Next Action
 
-Plan Phase 5 via `/gsd-plan-phase 5`.
+Complete project milestone audit and review all deliverables with developer.
 
