@@ -44,9 +44,9 @@
 - [x] **Task 4.4**: Enforce RBAC guardrails (`OWNER` or `ADMIN` only) on billing operations.
 - [x] **Task 4.5**: Guard or eliminate `/mock-upgrade` in production environments; enforce production JWT secret security.
 
-### Phase 5: Production Hardening, Caching & ML Concurrency
+### Phase 5: Production Hardening, Caching & ML Concurrency [COMPLETED]
 **Goal**: Scale throughput, optimize latency, and prepare for high-concurrency production deployments.
-- [ ] **Task 5.1**: Offload heavy Sentence-Transformers CPU/GPU inference from ASGI event loop using threadpool offloading (`run_in_threadpool`) or dedicated worker service.
-- [ ] **Task 5.2**: Transition in-memory `slowapi` rate limiting and `BoundedEmbeddingCache` to a distributed Redis backend.
-- [ ] **Task 5.3**: Optimize client bundle and configure frontend automated tests (Vitest + React Testing Library).
-- [ ] **Task 5.4**: Set up GitHub Actions CI workflow for automated linting and test runs.
+- [x] **Task 5.1**: Offload heavy Sentence-Transformers CPU/GPU inference from ASGI event loop using threadpool offloading (`run_in_threadpool`) or dedicated worker service.
+- [x] **Task 5.2**: Transition in-memory `slowapi` rate limiting and `BoundedEmbeddingCache` to a distributed Redis backend.
+- [x] **Task 5.3**: Optimize client bundle and configure frontend automated tests (Vitest + React Testing Library).
+- [x] **Task 5.4**: Set up GitHub Actions CI workflow for automated linting and test runs.

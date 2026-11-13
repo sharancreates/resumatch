@@ -3,6 +3,7 @@ import nltk
 import re
 import threading
 import logging
+import hashlib
 
 import numpy as np
 from collections import OrderedDict
@@ -74,7 +75,71 @@ class BoundedEmbeddingCache:
                     self._cache.popitem(last=False)
             self._cache[key] = value
 
-_embedding_cache = BoundedEmbeddingCache(maxsize=128)
+
+class RedisEmbeddingCache:
+    """Redis-backed distributed embedding cache with transparent fallback to in-memory LRU."""
+    def __init__(self, fallback_cache: BoundedEmbeddingCache, redis_url: str | None = None, ttl: int = 86400):
+        self.fallback = fallback_cache
+        self.ttl = ttl
+        self.redis_client = None
+        self._url = redis_url or os.environ.get("REDIS_URL")
+        if self._url:
+            try:
+                import redis
+                self.redis_client = redis.from_url(
+                    self._url,
+                    socket_connect_timeout=2.0,
+                    socket_timeout=2.0,
+                    decode_responses=False
+                )
+                self.redis_client.ping()
+                logger.info("Redis embedding cache connected at %s", self._url)
+            except Exception as e:
+                logger.warning("Redis embedding cache unavailable (%s). Falling back to in-memory LRU.", e)
+                self.redis_client = None
+
+    def _get_key(self, text: str) -> str:
+        sha = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        return f"emb:{sha}"
+
+    def get(self, text: str):
+        if not text:
+            return None
+        
+        # Try Redis first
+        if self.redis_client is not None:
+            try:
+                key = self._get_key(text)
+                raw_bytes = self.redis_client.get(key)
+                if raw_bytes is not None:
+                    arr = np.frombuffer(raw_bytes, dtype=np.float32)
+                    self.fallback.put(hash(text), arr)
+                    return arr
+            except Exception as e:
+                logger.warning("Redis cache get error (%s). Falling back to memory.", e)
+
+        # Fallback to in-memory LRU
+        return self.fallback.get(hash(text))
+
+    def put(self, text: str, embedding: np.ndarray):
+        if not text or embedding is None:
+            return
+
+        # Always store in in-memory LRU
+        self.fallback.put(hash(text), embedding)
+
+        # Try storing in Redis
+        if self.redis_client is not None:
+            try:
+                key = self._get_key(text)
+                raw_bytes = embedding.astype(np.float32).tobytes()
+                self.redis_client.set(key, raw_bytes, ex=self.ttl)
+            except Exception as e:
+                logger.warning("Redis cache put error (%s).", e)
+
+
+_local_cache = BoundedEmbeddingCache(maxsize=128)
+_embedding_cache = RedisEmbeddingCache(fallback_cache=_local_cache)
 
 # --- Lazy thread-safe model loader ---
 _model_lock = threading.Lock()
@@ -147,8 +212,7 @@ def get_cached_embedding(text):
     if m is None or tok is None or not text.strip():
         return np.zeros(384)
 
-    cache_key = hash(text)
-    cached = _embedding_cache.get(cache_key)
+    cached = _embedding_cache.get(text)
     if cached is not None:
         return cached
 
@@ -170,7 +234,7 @@ def get_cached_embedding(text):
         embeddings = outputs.last_hidden_state.numpy()
         sentence_embeddings = np.mean(embeddings, axis=1)
         final_embedding = np.mean(sentence_embeddings, axis=0)
-        _embedding_cache.put(cache_key, final_embedding)
+        _embedding_cache.put(text, final_embedding)
         return final_embedding
     except Exception as ex:
         logger.warning(f"Failed to generate embedding: {ex}")

@@ -12,12 +12,20 @@ from routes.analyze import analyze_router
 from routes.teams import teams_router
 from routes.reports import reports_router
 from utils.db import init_db
+from utils.limiter import limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.middleware import SlowAPIMiddleware
 
 app = FastAPI(
     title="ResuMatch SaaS API",
     description="A multi-tenant resume parser, ATS hybrid scanner, and AI rewriter API.",
     version="1.0.0"
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS Configuration
 allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
