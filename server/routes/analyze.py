@@ -103,11 +103,17 @@ async def analyze_public_endpoint(request: Request, req: PublicAnalyzeRequest):
         _public_scan_counts[client_key] = current_count + 1
         remaining_scans = max(0, PUBLIC_FREE_SCAN_LIMIT - _public_scan_counts[client_key])
 
-    # Offload heavy ML scoring to worker thread
+    # Offload heavy ML scoring and fresher audit to worker thread
     from services.ai_engine import hybrid_match_score
+    from utils.resume_parser import parse_resume_structure
+    from services.fresher_auditor import run_fresher_audit
+
     final_score, missing_keywords, lexical_score, semantic_score = await run_in_threadpool(
         hybrid_match_score, resume_text, job_text
     )
+
+    structure = await run_in_threadpool(parse_resume_structure, resume_text)
+    fresher_audit = await run_in_threadpool(run_fresher_audit, resume_text, structure)
 
     # Generate privacy-safe scorecard (never stores raw resume PII)
     scorecard_id = f"sc_{uuid.uuid4().hex[:12]}"
@@ -115,9 +121,12 @@ async def analyze_public_endpoint(request: Request, req: PublicAnalyzeRequest):
         _scorecards[scorecard_id] = {
             "id": scorecard_id,
             "score": final_score,
+            "fresher_score": fresher_audit["fresher_score"],
+            "readiness_verdict": fresher_audit["readiness_verdict"],
             "lexical_score": lexical_score,
             "semantic_score": semantic_score,
             "top_missing_skills": missing_keywords[:3],
+            "critical_fixes": fresher_audit["critical_fixes"][:2],
             "all_missing_count": len(missing_keywords),
             "created_at": datetime.now(timezone.utc).isoformat()
         }
@@ -127,6 +136,12 @@ async def analyze_public_endpoint(request: Request, req: PublicAnalyzeRequest):
         "data": {
             "scorecard_id": scorecard_id,
             "score": final_score,
+            "fresher_audit": {
+                "fresher_score": fresher_audit["fresher_score"],
+                "readiness_verdict": fresher_audit["readiness_verdict"],
+                "critical_fixes": fresher_audit["critical_fixes"][:2],
+                "quick_wins": fresher_audit["quick_wins"][:2]
+            },
             "breakdown": {
                 "lexical": lexical_score,
                 "semantic": semantic_score
@@ -180,6 +195,10 @@ async def analyze_endpoint(
 
         # Parse resume structure offloaded to threadpool
         structure = await run_in_threadpool(parse_resume_structure, resume_text)
+
+        # Run fresher-specific diagnostics offloaded to threadpool
+        from services.fresher_auditor import run_fresher_audit
+        fresher_audit = await run_in_threadpool(run_fresher_audit, resume_text, structure)
 
         # Generate placeholders for mock AI suggestions
         skills_gap = {
@@ -298,7 +317,8 @@ async def analyze_endpoint(
                     "lexical": lexical_score,
                     "semantic": semantic_score
                 },
-                "structure": structure
+                "structure": structure,
+                "fresher_audit": fresher_audit
             }
         }
     except HTTPException:

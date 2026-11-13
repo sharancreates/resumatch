@@ -313,6 +313,22 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                       </div>
                     )}
 
+                    {/* Fresher Readiness & Quick Fix Preview */}
+                    {scanResult.fresher_audit && (
+                      <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                            <span>🎓</span> Fresher Readiness: {scanResult.fresher_audit.fresher_score}% ({scanResult.fresher_audit.readiness_verdict})
+                          </span>
+                        </div>
+                        {scanResult.fresher_audit.critical_fixes?.length > 0 && (
+                          <div className="text-[11px] text-rose-300 flex items-start gap-1">
+                            <span>👉</span> <span>{scanResult.fresher_audit.critical_fixes[0]}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Action Triggers */}
                     <div className="flex flex-wrap gap-3 pt-2">
                       <button

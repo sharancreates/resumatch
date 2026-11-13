@@ -5,7 +5,9 @@ SECTION_HEADERS = {
     "skills": ["skills", "technical skills", "technologies", "proficiencies", "core competencies", "skills & tools", "technical proficiencies", "technical expertise", "expertise"],
     "experience": ["experience", "work experience", "employment history", "professional experience", "work history", "employment", "professional background", "career history"],
     "education": ["education", "academic background", "academic credentials", "degrees", "educational background", "academic history", "academic profile"],
-    "projects": ["projects", "academic projects", "personal projects", "selected projects", "key projects", "development projects"]
+    "projects": ["projects", "academic projects", "personal projects", "selected projects", "key projects", "development projects"],
+    "coursework": ["relevant coursework", "coursework", "core subjects", "key courses", "academic courses", "courses"],
+    "certifications": ["certifications", "certificates", "licenses & certifications", "credentials", "licenses and certifications"]
 }
 
 def clean_header(line):
@@ -35,11 +37,16 @@ def parse_contact_details(text):
     # Extract LinkedIn profiles
     linkedin_match = re.search(r'(?:https?://)?(?:www\.)?linkedin\.com/in/[a-zA-Z0-9_-]+', text)
     linkedin = linkedin_match.group(0) if linkedin_match else None
+
+    # Extract GitHub profiles
+    github_match = re.search(r'(?:https?://)?(?:www\.)?github\.com/[a-zA-Z0-9_-]+', text)
+    github = github_match.group(0) if github_match else None
     
     return {
         "email": email,
         "phone": phone,
-        "linkedin": linkedin
+        "linkedin": linkedin,
+        "github": github
     }
 
 def segment_resume(text):
@@ -49,6 +56,8 @@ def segment_resume(text):
         "experience": "",
         "education": "",
         "projects": "",
+        "coursework": "",
+        "certifications": "",
         "other": ""
     }
     
@@ -78,11 +87,12 @@ def parse_resume_structure(text):
     sections = segment_resume(text)
     
     # Ensure contact section matches parsed fields if segment text is empty
-    if not sections["contact"] and (contact["email"] or contact["phone"] or contact["linkedin"]):
+    if not sections["contact"] and (contact["email"] or contact["phone"] or contact["linkedin"] or contact["github"]):
         contact_lines = []
         if contact["email"]: contact_lines.append(f"Email: {contact['email']}")
         if contact["phone"]: contact_lines.append(f"Phone: {contact['phone']}")
         if contact["linkedin"]: contact_lines.append(f"LinkedIn: {contact['linkedin']}")
+        if contact["github"]: contact_lines.append(f"GitHub: {contact['github']}")
         sections["contact"] = "\n".join(contact_lines)
         
     return {

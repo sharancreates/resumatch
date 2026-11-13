@@ -6,10 +6,10 @@
 [Milestone 1: Platform Core & Hardening (Phases 1-5)] ──► [COMPLETED]
                                                               │
                                                               ▼
-[Phase 6: Student Landing & Free Scan] [COMPLETED] ──► [Phase 7: Fresher Audit Engine] ──► [Phase 8: AI Bullet Rewriter]
-                                                                                                    │
-                                                                                                    ▼
-[Phase 10: UPI & Student Micro-Pricing] ◄── [Phase 9: Fresher ATS Templates & Exports] ◄───────────┘
+[Phase 6: Student Landing & Free Scan] [COMPLETED] ──► [Phase 7: Fresher Audit Engine] [COMPLETED] ──► [Phase 8: AI Bullet Rewriter]
+                                                                                                                │
+                                                                                                                ▼
+[Phase 10: UPI & Student Micro-Pricing] ◄── [Phase 9: Fresher ATS Templates & Exports] ◄───────────────────────┘
 ```
 
 ---
@@ -61,13 +61,13 @@
 - [x] **Task 6.4**: Build visual, branded resume scorecard generator optimized for WhatsApp and LinkedIn sharing with embedded referral parameters.
 - [x] **Task 6.5**: Add DPDP-compliant privacy policy, "we never train on your resume" pledge, and 30-day retention policies for free scans.
 
-### Phase 7: Fresher-Specific Resume Audit Engine
+### Phase 7: Fresher-Specific Resume Audit Engine [COMPLETED]
 **Goal**: Build deeper diagnostic tools tailored specifically to students and early-career job applicants.
-- [ ] **Task 7.1**: Build Project Quality Checker: Analyze projects for explicit tech stack, personal contribution, and measurable metrics.
-- [ ] **Task 7.2**: Build Missing Sections & Links Auditor: Verify presence and validity of GitHub, LinkedIn, coursework, and technical skills grouping.
-- [ ] **Task 7.3**: Build Action Verb & Weak Phrase Detector: Flag passive language ("worked on", "assisted") and recommend active impact verbs.
-- [ ] **Task 7.4**: Build ATS Layout & Readability Validator: Warn against tables, multi-column blocks, photos, and non-standard headings, while enforcing single-page constraints.
-- [ ] **Task 7.5**: Integrate fresher diagnostics directly into the analysis report UI with actionable pill badges and one-click fix prompts.
+- [x] **Task 7.1**: Build Project Quality Checker: Analyze projects for explicit tech stack, personal contribution, and measurable metrics.
+- [x] **Task 7.2**: Build Missing Sections & Links Auditor: Verify presence and validity of GitHub, LinkedIn, coursework, and technical skills grouping.
+- [x] **Task 7.3**: Build Action Verb & Weak Phrase Detector: Flag passive language ("worked on", "assisted") and recommend active impact verbs.
+- [x] **Task 7.4**: Build ATS Layout & Readability Validator: Warn against tables, multi-column blocks, photos, and non-standard headings, while enforcing single-page constraints.
+- [x] **Task 7.5**: Integrate fresher diagnostics directly into the analysis report UI with actionable pill badges and one-click fix prompts.
 
 ### Phase 8: Grounded AI Bullet Rewriter & 1-Click Job Tailoring
 **Goal**: Transform weak bullets into ATS-optimized points with strict anti-hallucination guardrails and job-specific versioning.
