@@ -28,9 +28,9 @@
 - **FR-STOR-03**: Persist generated PDF evaluation reports to object storage and save report records in the database with shareable links.
 
 ### Module 5: Subscriptions & Usage Quotas
-- **FR-BILL-01**: Integrate Stripe Checkout for monthly/annual SaaS tier subscriptions (Free, Pro, Enterprise).
-- **FR-BILL-02**: Handle Stripe webhooks (`checkout.session.completed`, `invoice.payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`).
-- **FR-BILL-03**: Provide Customer Billing Portal redirects for subscription management, card updates, and cancellations.
+- **FR-BILL-01**: Integrate Razorpay Orders / Checkout for monthly/annual SaaS tier subscriptions (Free, Pro, Enterprise).
+- **FR-BILL-02**: Handle Razorpay webhooks (`payment.captured`, `order.paid`, `subscription.charged`, `subscription.cancelled`) with HMAC SHA-256 signature verification.
+- **FR-BILL-03**: Verify Razorpay payment signatures (HMAC SHA-256) on client payment completion before activating subscription.
 - **FR-BILL-04**: Enforce tier-based monthly scan limits (e.g., Free: 10 scans/month, Pro: 500 scans/month, Enterprise: Unlimited) without bypass loopholes.
 
 ---
@@ -80,8 +80,8 @@
 | **FR-STOR-01**| S3/R2 Cloud File Uploads | P1 | Pending Integration | Milestone 2 |
 | **FR-STOR-02**| Presigned Resume Downloads | P1 | Pending Integration | Milestone 2 |
 | **FR-STOR-03**| Persistent Report Records | P2 | Pending | Milestone 2 |
-| **FR-BILL-01**| Stripe Checkout Integration | P1 | Functional | Milestone 2 |
-| **FR-BILL-02**| Stripe Webhook Event Handlers | P1 | In Progress | Milestone 2 |
-| **FR-BILL-03**| Customer Billing Portal Redirect | P1 | Pending | Milestone 2 |
-| **FR-BILL-04**| Scan Quota Enforcement | P0 | Needs Fix (quota bypass bug)| Phase 1: Stabilization |
+| **FR-BILL-01**| Razorpay Orders & Checkout | P1 | Pending Integration | Phase 4: Razorpay |
+| **FR-BILL-02**| Razorpay Webhook Handlers | P1 | Pending Integration | Phase 4: Razorpay |
+| **FR-BILL-03**| Payment Signature Verification | P1 | Pending Integration | Phase 4: Razorpay |
+| **FR-BILL-04**| Scan Quota Enforcement | P0 | Complete | Phase 1: Stabilization |
 
