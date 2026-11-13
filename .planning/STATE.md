@@ -4,8 +4,8 @@
 
 - **Status**: Development
 - **Milestone**: Milestone 2 — Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
-- **Active Phase**: Phase 8 — Grounded AI Bullet Rewriter & 1-Click Job Tailoring (Ready to Plan)
-- **Branch**: `phase-7`
+- **Active Phase**: Phase 8 — Grounded AI Bullet Rewriter & 1-Click Job Tailoring (Planned)
+- **Branch**: `phase-8`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -13,8 +13,8 @@
 
 ## 2. Immediate Priorities & Next Steps
 
-1. **[P0] Plan Phase 8**: Run `/gsd-plan-phase 8` to design the Grounded AI Bullet Rewriter prompt with anti-hallucination guardrails and 1-click job tailoring.
-2. **[P1] Merge Phase 7**: Merge `phase-7` into `main` after review.
+1. **[P0] Execute Phase 8**: Run `/gsd-execute-phase 8` to build the Grounded AI Bullet Rewriter service (`bullet_rewriter.py`), job tailoring endpoints, and interactive UI modals.
+2. **[P1] Verification**: Verify with pytest and vitest suites.
 
 ---
 
