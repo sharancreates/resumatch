@@ -122,6 +122,7 @@ function App() {
     loadUserProfile();
     loadOrganizations();
     fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // Fetch team members when active organization workspace changes or Team tab becomes active
@@ -196,6 +197,7 @@ function App() {
     } else if (upgradeStatus === 'mock') {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // Scan History list

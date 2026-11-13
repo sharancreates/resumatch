@@ -76,3 +76,4 @@ jobs:
         working-directory: ./client
         run: |
           npm run build
+

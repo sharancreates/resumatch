@@ -58,14 +58,17 @@ def test_slowapi_limiter_setup():
     assert len(limiter._default_limits) > 0
 
 
-@pytest.mark.asyncio
-async def test_run_in_threadpool_offloading():
+def test_run_in_threadpool_offloading():
     """Verify that CPU-bound operations run off the main event loop in worker threadpool."""
-    def cpu_heavy_task(a: int, b: int) -> int:
-        total = 0
-        for _ in range(1000):
-            total += (a * b)
-        return total
+    async def _runner():
+        def cpu_heavy_task(a: int, b: int) -> int:
+            total = 0
+            for _ in range(1000):
+                total += (a * b)
+            return total
 
-    result = await run_in_threadpool(cpu_heavy_task, 15, 20)
+        return await run_in_threadpool(cpu_heavy_task, 15, 20)
+
+    result = asyncio.run(_runner())
     assert result == 300000
+

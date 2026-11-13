@@ -6,7 +6,7 @@ import logging
 import requests
 from io import BytesIO
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request, Header
 from fastapi.responses import StreamingResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
