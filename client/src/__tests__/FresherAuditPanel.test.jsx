@@ -129,3 +129,4 @@ describe('FresherAuditPanel Component', () => {
     expect(screen.getByText(/Fresher diagnostics loading or not available/i)).toBeInTheDocument();
   });
 });
+

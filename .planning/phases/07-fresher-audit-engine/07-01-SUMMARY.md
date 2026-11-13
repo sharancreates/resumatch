@@ -35,3 +35,4 @@ Implemented the 4-pillar Fresher-Specific Resume Audit Engine (`server/services/
 ## 3. Verification
 - `python -m py_compile` passed on all modified backend files.
 - `pytest server/tests/test_fresher_auditor.py` executed in 0.24 seconds with 7/7 passed.
+
