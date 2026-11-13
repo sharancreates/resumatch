@@ -70,6 +70,7 @@ class Organization(Base):
     reports = relationship('Report', back_populates='organization', cascade='all, delete-orphan')
     usage_logs = relationship('UsageLog', back_populates='organization', cascade='all, delete-orphan')
     audit_logs = relationship('AuditLog', back_populates='organization', cascade='all, delete-orphan')
+    payments = relationship('Payment', back_populates='organization', cascade='all, delete-orphan')
 
 class Membership(Base):
     __tablename__ = 'memberships'
@@ -201,8 +202,11 @@ class Subscription(Base):
 
     id = Column(String(36), primary_key=True)
     organization_id = Column(String(36), ForeignKey('organizations.id', ondelete='CASCADE'), unique=True, nullable=False)
-    stripe_customer_id = Column(String(100), unique=True, nullable=False)
+    payment_provider = Column(String(50), default='RAZORPAY') # RAZORPAY, STRIPE
+    stripe_customer_id = Column(String(100), unique=True, nullable=True)
     stripe_subscription_id = Column(String(100), unique=True, nullable=True)
+    razorpay_customer_id = Column(String(100), nullable=True)
+    razorpay_subscription_id = Column(String(100), unique=True, nullable=True)
     plan = Column(String(20), default='FREE') # FREE, PRO, TEAM
     status = Column(String(50), nullable=False) # active, past_due, canceled, trialing
     trial_start = Column(DateTime, nullable=True)
@@ -215,6 +219,33 @@ class Subscription(Base):
 
     # Relationships
     organization = relationship('Organization', back_populates='subscription')
+
+class Payment(Base):
+    __tablename__ = 'payments'
+
+    id = Column(String(36), primary_key=True)
+    organization_id = Column(String(36), ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False)
+    razorpay_payment_id = Column(String(100), unique=True, nullable=True)
+    razorpay_order_id = Column(String(100), nullable=True)
+    amount = Column(Integer, nullable=False) # In paise (e.g. 49900 = ₹499)
+    currency = Column(String(10), default='INR')
+    status = Column(String(50), nullable=False) # captured, created, failed
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    organization = relationship('Organization', back_populates='payments')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "razorpay_payment_id": self.razorpay_payment_id,
+            "razorpay_order_id": self.razorpay_order_id,
+            "amount": self.amount,
+            "currency": self.currency,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
 
 class ApiKey(Base):
     __tablename__ = 'api_keys'

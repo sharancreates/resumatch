@@ -22,7 +22,14 @@ class TenantContext:
     def role(self) -> Optional[str]:
         return self.membership.role if self.membership else None
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-resumatch-9821')
+def validate_secret_key() -> str:
+    env = (os.environ.get("ENVIRONMENT") or os.environ.get("FASTAPI_ENV") or "").lower()
+    secret = os.environ.get('SECRET_KEY', 'dev-secret-key-resumatch-9821')
+    if env == "production" and secret == 'dev-secret-key-resumatch-9821':
+        raise RuntimeError("Critical Security Error: Production environment requires an explicitly set SECRET_KEY.")
+    return secret
+
+SECRET_KEY = validate_secret_key()
 ALGORITHM = 'HS256'
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -35,18 +42,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def encode_auth_token(user_id: str) -> str:
     try:
+        secret = validate_secret_key()
         payload = {
             'exp': datetime.now(timezone.utc) + timedelta(days=7),
             'iat': datetime.now(timezone.utc),
             'sub': user_id
         }
-        return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        return jwt.encode(payload, secret, algorithm=ALGORITHM)
     except Exception as e:
+        if isinstance(e, RuntimeError):
+            raise
         return str(e)
 
 def decode_auth_token(auth_token: str):
     try:
-        payload = jwt.decode(auth_token, SECRET_KEY, algorithms=[ALGORITHM])
+        secret = validate_secret_key()
+        payload = jwt.decode(auth_token, secret, algorithms=[ALGORITHM])
         return payload['sub']
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.'

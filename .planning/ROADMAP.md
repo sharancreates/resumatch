@@ -36,13 +36,13 @@
 - [x] **Task 3.3**: Persist generated ReportLab PDF evaluations to cloud storage and create database records in `Report`.
 - [x] **Task 3.4**: Build shareable public/restricted report link endpoints (`/api/reports/{report_id}`).
 
-### Phase 4: Razorpay Billing Lifecycle & Access Guardrails
+### Phase 4: Razorpay Billing Lifecycle & Access Guardrails [COMPLETED]
 **Goal**: Complete SaaS billing automation via Razorpay (orders, verification, webhooks) and eliminate security bypasses.
-- [ ] **Task 4.1**: Align database models and migrations for Razorpay (update `Subscription` with Razorpay fields, add `Payment` model).
-- [ ] **Task 4.2**: Implement Razorpay Order creation (`POST /api/billing/order`) and payment signature verification (`POST /api/billing/verify`) with HMAC SHA-256.
-- [ ] **Task 4.3**: Handle Razorpay webhook events (`payment.captured`, `order.paid`, `subscription.charged`, `subscription.cancelled`) with `X-Razorpay-Signature` validation.
-- [ ] **Task 4.4**: Enforce RBAC guardrails (`OWNER` or `ADMIN` only) on billing operations.
-- [ ] **Task 4.5**: Guard or eliminate `/mock-upgrade` in production environments; enforce production JWT secret security.
+- [x] **Task 4.1**: Align database models and migrations for Razorpay (update `Subscription` with Razorpay fields, add `Payment` model).
+- [x] **Task 4.2**: Implement Razorpay Order creation (`POST /api/billing/order`) and payment signature verification (`POST /api/billing/verify`) with HMAC SHA-256.
+- [x] **Task 4.3**: Handle Razorpay webhook events (`payment.captured`, `order.paid`, `subscription.charged`, `subscription.cancelled`) with `X-Razorpay-Signature` validation.
+- [x] **Task 4.4**: Enforce RBAC guardrails (`OWNER` or `ADMIN` only) on billing operations.
+- [x] **Task 4.5**: Guard or eliminate `/mock-upgrade` in production environments; enforce production JWT secret security.
 
 ### Phase 5: Production Hardening, Caching & ML Concurrency
 **Goal**: Scale throughput, optimize latency, and prepare for high-concurrency production deployments.

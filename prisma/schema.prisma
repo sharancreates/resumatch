@@ -67,6 +67,7 @@ model Organization {
   auditLogs       AuditLog[]
   reports         Report[]
   usageLogs       UsageLog[]
+  payments        Payment[]
   resumes         Resume[]         // Organization-level shared resumes
   jobDescriptions JobDescription[] // Organization-level job descriptions
 }
@@ -176,36 +177,44 @@ model Report {
 }
 
 model Subscription {
-  id                   String       @id @default(uuid())
-  organizationId       String       @unique
-  stripeCustomerId     String       @unique
-  stripeSubscriptionId String?      @unique
-  plan                 PlanTier     @default(FREE)
-  status               String       // active, past_due, canceled, trialing, paused
-  trialStart           DateTime?
-  trialEnd             DateTime?
-  currentPeriodStart   DateTime
-  currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean      @default(false)
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  id                     String       @id @default(uuid())
+  organizationId         String       @unique
+  paymentProvider        String       @default("RAZORPAY")
+  stripeCustomerId       String?      @unique
+  stripeSubscriptionId   String?      @unique
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?      @unique
+  plan                   PlanTier     @default(FREE)
+  status                 String       // active, past_due, canceled, trialing, paused
+  trialStart             DateTime?
+  trialEnd               DateTime?
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean      @default(false)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([stripeCustomerId])
+  @@index([razorpayCustomerId])
 }
 
 model Payment {
-  id               String   @id @default(uuid())
-  stripeInvoiceId  String   @unique
-  stripeCustomerId String
-  amount           Int      // In cents
-  currency         String
-  status           String   // paid, open, uncollectible, void
-  pdfUrl           String?  // Stripe Hosted PDF Link
-  createdAt        DateTime @default(now())
+  id                String       @id @default(uuid())
+  organizationId    String
+  razorpayPaymentId String?      @unique
+  razorpayOrderId   String?
+  amount            Int          // In paise / cents
+  currency          String       @default("INR")
+  status            String       // captured, created, failed
+  pdfUrl            String?      // Receipt / invoice URL
+  createdAt         DateTime     @default(now())
 
-  @@index([stripeCustomerId])
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([razorpayPaymentId])
 }
 
 model ApiKey {
