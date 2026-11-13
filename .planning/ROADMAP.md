@@ -6,7 +6,7 @@
 [Milestone 1: Platform Core & Hardening (Phases 1-5)] ──► [COMPLETED]
                                                               │
                                                               ▼
-[Phase 6: Student Landing & Free Scan] [COMPLETED] ──► [Phase 7: Fresher Audit Engine] [COMPLETED] ──► [Phase 8: AI Bullet Rewriter]
+[Phase 6: Student Landing & Free Scan] [COMPLETED] ──► [Phase 7: Fresher Audit Engine] [COMPLETED] ──► [Phase 8: AI Bullet Rewriter] [COMPLETED]
                                                                                                                 │
                                                                                                                 ▼
 [Phase 10: UPI & Student Micro-Pricing] ◄── [Phase 9: Fresher ATS Templates & Exports] ◄───────────────────────┘
@@ -69,12 +69,12 @@
 - [x] **Task 7.4**: Build ATS Layout & Readability Validator: Warn against tables, multi-column blocks, photos, and non-standard headings, while enforcing single-page constraints.
 - [x] **Task 7.5**: Integrate fresher diagnostics directly into the analysis report UI with actionable pill badges and one-click fix prompts.
 
-### Phase 8: Grounded AI Bullet Rewriter & 1-Click Job Tailoring
+### Phase 8: Grounded AI Bullet Rewriter & 1-Click Job Tailoring [COMPLETED]
 **Goal**: Transform weak bullets into ATS-optimized points with strict anti-hallucination guardrails and job-specific versioning.
-- [ ] **Task 8.1**: Implement Gemini 1.5 Flash bullet rewriter prompt with strict anti-hallucination guardrails (prompting the user for their actual metrics: users, %, dataset size).
-- [ ] **Task 8.2**: Build interactive bullet rewriter UI allowing line-by-line review, metric insertion, and instant keyword insertion.
-- [ ] **Task 8.3**: Implement "Tailor to this Job": 1-click generation of tailored resume versions linked to target job descriptions.
-- [ ] **Task 8.4**: Implement per-user and daily LLM quota enforcement to guarantee cost control and gross margin protection.
+- [x] **Task 8.1**: Implement Gemini 1.5 Flash bullet rewriter prompt with strict anti-hallucination guardrails (prompting the user for their actual metrics: users, %, dataset size).
+- [x] **Task 8.2**: Build interactive bullet rewriter UI allowing line-by-line review, metric insertion, and instant keyword insertion.
+- [x] **Task 8.3**: Implement "Tailor to this Job": 1-click generation of tailored resume versions linked to target job descriptions.
+- [x] **Task 8.4**: Implement per-user and daily LLM quota enforcement to guarantee cost control and gross margin protection.
 
 ### Phase 9: Fresher ATS Templates & Multi-Format Export
 **Goal**: Provide clean, campus-tested resume templates with instant export in styled PDF and editable DOCX formats.

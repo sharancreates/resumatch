@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import FresherAuditPanel from './FresherAuditPanel';
+import BulletRewriterModal from './BulletRewriterModal';
+import JobTailorModal from './JobTailorModal';
 
 function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
   const [suggestions, setSuggestions] = useState([]);
@@ -8,6 +10,8 @@ function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
   const [sugError, setSugError] = useState('');
   const [activeTab, setActiveTab] = useState('skills');
   const [mainView, setMainView] = useState('fresher');
+  const [rewriterModalOpen, setRewriterModalOpen] = useState(false);
+  const [tailorModalOpen, setTailorModalOpen] = useState(false);
 
   useEffect(() => {
     if (!result || !result.id || !token || !isPremium) {
@@ -89,13 +93,27 @@ function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
         </div>
       </div>
 
-      {/* PDF Export Action */}
-      <div className="flex mb-6">
+      {/* Action Toolbar: PDF Download, AI Bullet Rewriter, and Job Tailor */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
         <button
           onClick={handleDownloadPDF}
-          className="w-full text-xs py-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 rounded-lg transition font-bold shadow-sm flex items-center justify-center gap-1 border border-indigo-100 dark:border-indigo-900/20"
+          className="text-xs py-2.5 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition font-bold shadow-sm flex items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-700"
         >
-          📥 Download PDF Report
+          <span>📥</span> Download PDF
+        </button>
+
+        <button
+          onClick={() => setRewriterModalOpen(true)}
+          className="text-xs py-2.5 px-3 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-xl transition font-bold shadow-sm flex items-center justify-center gap-1.5 border border-indigo-200 dark:border-indigo-800/50"
+        >
+          <span>⚡</span> Bullet Rewriter
+        </button>
+
+        <button
+          onClick={() => setTailorModalOpen(true)}
+          className="text-xs py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl transition font-bold shadow-md shadow-indigo-500/20 flex items-center justify-center gap-1.5"
+        >
+          <span>🎯</span> Tailor to this Job
         </button>
       </div>
 
@@ -281,6 +299,28 @@ function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
           </div>
         )}
       </div>
+
+      {/* Grounded Bullet Rewriter Modal */}
+      <BulletRewriterModal
+        isOpen={rewriterModalOpen}
+        onClose={() => setRewriterModalOpen(false)}
+        analysisId={result.id}
+        missingKeywords={result.missing || []}
+        token={token}
+        API_URL={API_URL}
+      />
+
+      {/* 1-Click Job Tailor Modal */}
+      <JobTailorModal
+        isOpen={tailorModalOpen}
+        onClose={() => setTailorModalOpen(false)}
+        analysisId={result.id}
+        missingKeywords={result.missing || []}
+        isPremium={isPremium}
+        handleUpgrade={handleUpgrade}
+        token={token}
+        API_URL={API_URL}
+      />
 
     </div>
   );
