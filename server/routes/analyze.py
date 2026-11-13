@@ -4,6 +4,7 @@ import uuid
 import json
 import logging
 import requests
+import threading
 from io import BytesIO
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request, Header
@@ -30,10 +31,127 @@ logger = logging.getLogger(__name__)
 
 analyze_router = APIRouter(prefix="/api", tags=["analyze"])
 
+# In-memory tracking for anonymous student free scans and viral scorecards
+_public_scan_lock = threading.Lock()
+_public_scan_counts: dict[str, int] = {}
+_scorecards: dict[str, dict] = {}
+
+PUBLIC_FREE_SCAN_LIMIT = 3
+
+
+def reset_public_scan_limits():
+    """Testing helper to clear public scan quotas and scorecards."""
+    with _public_scan_lock:
+        _public_scan_counts.clear()
+        _scorecards.clear()
+
+
+def get_client_ip(request: Request, client_id: str | None = None) -> str:
+    if client_id and client_id.strip():
+        return f"client:{client_id.strip()}"
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "anonymous_visitor"
+
+
+class PublicAnalyzeRequest(BaseModel):
+    resume: str
+    job: str
+    client_id: str | None = None
+
+
 class AnalyzeRequest(BaseModel):
     resume: str
     job: str
     file_url: str | None = None
+
+
+@analyze_router.post('/analyze/public')
+@limiter.limit("15/minute")
+async def analyze_public_endpoint(request: Request, req: PublicAnalyzeRequest):
+    """
+    Frictionless public resume scan endpoint for freshers.
+    Zero sign-up required; tracks client IP/session with a 3-free-scan limit.
+    """
+    resume_text = req.resume.strip() if req.resume else ""
+    job_text = req.job.strip() if req.job else ""
+
+    if not resume_text or not job_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Both resume text and target job description are required."
+        )
+
+    if len(resume_text) > 20000 or len(job_text) > 20000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Input text exceeds maximum allowed length of 20,000 characters."
+        )
+
+    client_key = get_client_ip(request, req.client_id)
+
+    with _public_scan_lock:
+        current_count = _public_scan_counts.get(client_key, 0)
+        if current_count >= PUBLIC_FREE_SCAN_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="You have used all 3 free scans. Sign in or grab a Sprint Pass for unlimited scans!"
+            )
+        _public_scan_counts[client_key] = current_count + 1
+        remaining_scans = max(0, PUBLIC_FREE_SCAN_LIMIT - _public_scan_counts[client_key])
+
+    # Offload heavy ML scoring to worker thread
+    from services.ai_engine import hybrid_match_score
+    final_score, missing_keywords, lexical_score, semantic_score = await run_in_threadpool(
+        hybrid_match_score, resume_text, job_text
+    )
+
+    # Generate privacy-safe scorecard (never stores raw resume PII)
+    scorecard_id = f"sc_{uuid.uuid4().hex[:12]}"
+    with _public_scan_lock:
+        _scorecards[scorecard_id] = {
+            "id": scorecard_id,
+            "score": final_score,
+            "lexical_score": lexical_score,
+            "semantic_score": semantic_score,
+            "top_missing_skills": missing_keywords[:3],
+            "all_missing_count": len(missing_keywords),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+
+    return {
+        "status": "success",
+        "data": {
+            "scorecard_id": scorecard_id,
+            "score": final_score,
+            "breakdown": {
+                "lexical": lexical_score,
+                "semantic": semantic_score
+            },
+            "top_missing_skills": missing_keywords[:3],
+            "all_missing_count": len(missing_keywords),
+            "scans_remaining": remaining_scans
+        }
+    }
+
+
+@analyze_router.get('/scorecards/{scorecard_id}')
+def get_scorecard_endpoint(scorecard_id: str):
+    """
+    Public scorecard metadata endpoint for social sharing (WhatsApp / LinkedIn).
+    DPDP compliant: Returns anonymized score and skill tags only.
+    """
+    with _public_scan_lock:
+        card = _scorecards.get(scorecard_id)
+    if not card:
+        raise HTTPException(status_code=404, detail="Scorecard not found or expired.")
+    return {
+        "status": "success",
+        "scorecard": card
+    }
 
 @analyze_router.post('/analyze')
 @limiter.limit("20/minute")

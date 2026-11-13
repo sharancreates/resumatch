@@ -6,10 +6,10 @@
 [Milestone 1: Platform Core & Hardening (Phases 1-5)] ──► [COMPLETED]
                                                               │
                                                               ▼
-[Phase 6: Student Landing & Free Scan] ──► [Phase 7: Fresher Audit Engine] ──► [Phase 8: AI Bullet Rewriter]
-                                                                                        │
-                                                                                        ▼
-[Phase 10: UPI & Student Micro-Pricing] ◄── [Phase 9: Fresher ATS Templates & Exports] ◄─┘
+[Phase 6: Student Landing & Free Scan] [COMPLETED] ──► [Phase 7: Fresher Audit Engine] ──► [Phase 8: AI Bullet Rewriter]
+                                                                                                    │
+                                                                                                    ▼
+[Phase 10: UPI & Student Micro-Pricing] ◄── [Phase 9: Fresher ATS Templates & Exports] ◄───────────┘
 ```
 
 ---
@@ -53,13 +53,13 @@
 
 ## Milestone 2: Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
 
-### Phase 6: Student Landing Experience & Instant Free Scan
+### Phase 6: Student Landing Experience & Instant Free Scan [COMPLETED]
 **Goal**: Reposition brand around Indian freshers and offer a zero-friction, no-login scan engine with viral shareable scorecards.
-- [ ] **Task 6.1**: Rewrite frontend landing page copy, headings, and value proposition with student-first senior voice; drop enterprise ATS claims.
-- [ ] **Task 6.2**: Implement anonymous, no-signup free scan flow (`POST /api/analyze/public`) tracking IP/session state with a 3-scan limit.
-- [ ] **Task 6.3**: Build quick-view result card displaying overall match score and top 3 critical skill gaps.
-- [ ] **Task 6.4**: Build visual, branded resume scorecard generator optimized for WhatsApp and LinkedIn sharing with embedded referral parameters.
-- [ ] **Task 6.5**: Add DPDP-compliant privacy policy, "we never train on your resume" pledge, and 30-day retention policies for free scans.
+- [x] **Task 6.1**: Rewrite frontend landing page copy, headings, and value proposition with student-first senior voice; drop enterprise ATS claims.
+- [x] **Task 6.2**: Implement anonymous, no-signup free scan flow (`POST /api/analyze/public`) tracking IP/session state with a 3-scan limit.
+- [x] **Task 6.3**: Build quick-view result card displaying overall match score and top 3 critical skill gaps.
+- [x] **Task 6.4**: Build visual, branded resume scorecard generator optimized for WhatsApp and LinkedIn sharing with embedded referral parameters.
+- [x] **Task 6.5**: Add DPDP-compliant privacy policy, "we never train on your resume" pledge, and 30-day retention policies for free scans.
 
 ### Phase 7: Fresher-Specific Resume Audit Engine
 **Goal**: Build deeper diagnostic tools tailored specifically to students and early-career job applicants.

@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
 import ScrollReveal from './ScrollReveal';
+import ScorecardModal from './ScorecardModal';
 
 export default function LandingPage({ onGetStarted, onLogin }) {
-  // Sandbox Teaser State
-  const [sandboxResume, setSandboxResume] = useState('');
-  const [sandboxJob, setSandboxJob] = useState('');
-  const [sandboxResult, setSandboxResult] = useState(null);
-  const [sandboxLoading, setSandboxLoading] = useState(false);
+  // Live Public Scanner State
+  const [resumeText, setResumeText] = useState('');
+  const [jobText, setJobText] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [scanResult, setScanResult] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scansRemaining, setScansRemaining] = useState(3);
+  const [scorecardModalOpen, setScorecardModalOpen] = useState(false);
 
   // FAQ Accordion State
   const [activeFaq, setActiveFaq] = useState(null);
@@ -15,60 +21,105 @@ export default function LandingPage({ onGetStarted, onLogin }) {
     setActiveFaq(activeFaq === index ? null : index);
   };
 
-  const runSandboxScan = (e) => {
-    e.preventDefault();
-    if (!sandboxResume.trim() || !sandboxJob.trim()) {
-      alert("Please paste both your resume and the job description in the sandbox.");
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.pdf') && !lower.endsWith('.docx')) {
+      setScanError("Please select a PDF or DOCX file.");
       return;
     }
 
-    setSandboxLoading(true);
-    setSandboxResult(null);
+    setSelectedFile(file);
+    setScanError('');
 
-    // Simulated scan calculation for the public teaser
-    setTimeout(() => {
-      const resumeWords = sandboxResume.toLowerCase().split(/\W+/);
-      const jobWords = sandboxJob.toLowerCase().split(/\W+/);
-      
-      const uniqueJobWords = Array.from(new Set(jobWords)).filter(w => w.length > 3);
-      const matchedWords = uniqueJobWords.filter(w => resumeWords.includes(w));
-      const missingWords = uniqueJobWords.filter(w => !resumeWords.includes(w)).slice(0, 4);
+    // Extract text via /api/parse-pdf
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const matchPct = Math.round((matchedWords.length / uniqueJobWords.length) * 100) || 45;
-      
-      setSandboxResult({
-        score: Math.min(matchPct, 95),
-        missing: missingWords.length > 0 ? missingWords : ["Python", "FastAPI", "Agile", "REST APIs"],
-        lexical: Math.min(matchPct - 5, 90),
-        semantic: Math.min(matchPct + 10, 95)
+    try {
+      setScanning(true);
+      const res = await axios.post("/api/parse-pdf", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
-      setSandboxLoading(false);
-    }, 1200);
+      if (res.data?.text) {
+        setResumeText(res.data.text);
+      }
+    } catch (err) {
+      console.error("File extraction error:", err);
+      setScanError("Failed to parse file. Please paste your resume text directly.");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const runLiveScan = async (e) => {
+    e.preventDefault();
+    setScanError('');
+
+    if (!resumeText.trim() || !jobText.trim()) {
+      setScanError("Please provide both your resume and the target job description.");
+      return;
+    }
+
+    setScanning(true);
+    setScanResult(null);
+
+    try {
+      const res = await axios.post("/api/analyze/public", {
+        resume: resumeText,
+        job: jobText,
+        client_id: localStorage.getItem('resumatch_guest_id') || undefined
+      });
+
+      if (res.data?.status === 'success') {
+        const data = res.data.data;
+        setScanResult(data);
+        if (typeof data.scans_remaining === 'number') {
+          setScansRemaining(data.scans_remaining);
+        }
+      }
+    } catch (err) {
+      const msg = err.response?.data?.detail;
+      if (err.response?.status === 429) {
+        setScanError(typeof msg === 'string' ? msg : "You have used all 3 free scans. Sign in or grab a Sprint Pass for unlimited scans!");
+      } else {
+        setScanError(typeof msg === 'string' ? msg : "Scan could not be completed. Please try again.");
+      }
+    } finally {
+      setScanning(false);
+    }
   };
 
   const faqs = [
     {
-      q: "How does the ATS score matching engine work?",
-      a: "Our core engine performs a hybrid analysis. First, a lexical parser evaluates keyword match density and missing key terms. Second, a semantic AI model (Sentence-Transformers) assesses contextual similarity, ensuring you get scored for meaning and industry synonym fits, not just exact letter matching."
+      q: "I have no corporate experience. How does ResuMatch help me?",
+      a: "Most resume tools assume you have 5 years in tech. ResuMatch is built specifically for freshers: we score your personal, academic, and internship projects, ensure your tech stack is formatted correctly, check for measurable results, and audit critical links like GitHub and LinkedIn."
     },
     {
-      q: "Can I manage multiple workspaces for team recruitment?",
-      a: "Yes! ResuMatch is fully multi-tenant. You can create separate workspace environments (e.g. for different departments, client accounts, or agencies), invite coworkers, assign access roles (Viewer, Recruiter, Admin), and collaborate together."
+      q: "Is the scan really free with no login or credit card?",
+      a: "Yes! You get 3 free complete scans directly on this page without creating an account or entering any credit card. You get your overall ATS match score and your top 3 missing tech skills immediately."
     },
     {
-      q: "Is there a developer API key system?",
-      a: "ResuMatch exposes RESTful endpoints for integration into custom HR platforms or job portals. Users on the Pro and Team plans can generate scoped API keys directly from their developer configurations panel with adjustable rate limit boundaries."
+      q: "How does the hybrid match engine work?",
+      a: "Campus placement bots use two filters: exact keyword matching (40%) and semantic contextual meaning (60%). Our dual engine scores both: making sure you have the exact required tools (like 'React', 'FastAPI') while understanding that 'built microservices' matches 'backend engineering'."
     },
     {
-      q: "What are the limitations of the free sandbox tier?",
-      a: "The Free tier includes 10 resume scans, basic match tracking, and 1 workspace organization. Upgrading to a premium Pro or Team subscription unlocks unlimited scans, advanced AI recommendations, PDF exports, and developer key credentials."
+      q: "What is your student privacy policy?",
+      a: "We comply strictly with India's DPDP Act. We never train AI models on your resume, never share or sell student data, and offer one-click resume deletion. Your resume belongs solely to you."
     }
   ];
 
+  const getScoreBadge = (score) => {
+    if (score >= 80) return { text: "✓ Placement Ready", color: "text-emerald-400 bg-emerald-950/40 border-emerald-500/30" };
+    if (score >= 60) return { text: "⚠ Needs Minor Polish", color: "text-amber-400 bg-amber-950/40 border-amber-500/30" };
+    return { text: "✕ High Rejection Risk", color: "text-rose-400 bg-rose-950/40 border-rose-500/30" };
+  };
+
   return (
     <div className="bg-[#0B0F19] text-gray-100 min-h-screen overflow-x-hidden font-sans selection:bg-indigo-500 selection:text-white">
-      
-      {/* BACKGROUND DECORATIVE GLOWS */}
+      {/* Background Decorative Glows */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none"></div>
       <div className="absolute top-[30%] right-[-10%] w-[55%] h-[65%] rounded-full bg-purple-900/10 blur-[130px] pointer-events-none"></div>
 
@@ -78,13 +129,15 @@ export default function LandingPage({ onGetStarted, onLogin }) {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25">
             RM
           </div>
-          <span className="text-lg font-black tracking-tight text-white">ResuMatch</span>
+          <div>
+            <span className="text-lg font-black tracking-tight text-white">ResuMatch <span className="text-indigo-400 text-xs uppercase px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-500/30">Freshers</span></span>
+          </div>
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-gray-400">
-          <a href="#features" className="hover:text-white transition">Features</a>
-          <a href="#sandbox" className="hover:text-white transition">Live Sandbox</a>
-          <a href="#pricing" className="hover:text-white transition">Pricing</a>
+          <a href="#scanner" className="hover:text-white transition">Free Scanner</a>
+          <a href="#features" className="hover:text-white transition">Why Freshers Love Us</a>
+          <a href="#pricing" className="hover:text-white transition">Student Pricing</a>
           <a href="#faq" className="hover:text-white transition">FAQ</a>
         </nav>
 
@@ -99,436 +152,393 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             onClick={onGetStarted}
             className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20"
           >
-            Get Started Free
+            Create Account
           </button>
         </div>
       </header>
 
       {/* HERO SECTION */}
-      <section className="max-w-7xl mx-auto px-6 pt-16 pb-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-        <div className="lg:col-span-7 space-y-6">
-          <ScrollReveal delay={100}>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/40 border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-wider uppercase">
-              🚀 Powering modern recruiters & job seekers
-            </div>
-          </ScrollReveal>
-          
-          <ScrollReveal delay={200}>
-            <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.1] text-white">
-              Optimize your resume. <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-indigo-200 to-purple-400">
-                Beat the ATS screening.
-              </span>
-            </h1>
-          </ScrollReveal>
+      <section className="max-w-7xl mx-auto px-6 pt-12 pb-16 relative z-10 text-center space-y-6">
+        <ScrollReveal delay={100}>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+            <span>🎓</span> Built for 2024–2026 Campus Drives & First Jobs in India
+          </div>
+        </ScrollReveal>
+        
+        <ScrollReveal delay={200}>
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.15] text-white max-w-4xl mx-auto">
+            Upload your resume, paste a job. <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-indigo-200 to-purple-400">
+              Get a better resume in 2 minutes.
+            </span>
+          </h1>
+        </ScrollReveal>
 
-          <ScrollReveal delay={300}>
-            <p className="text-base text-gray-400 max-w-xl leading-relaxed">
-              Use hybrid lexical matching and semantic AI scoring to check keyword fits, bridge experience gaps, rewrite bullet points, and land interviews with confidence.
-            </p>
-          </ScrollReveal>
-
-          <ScrollReveal delay={400} className="flex flex-wrap gap-4 pt-2">
-            <button 
-              onClick={onGetStarted}
-              className="px-7 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-xl shadow-indigo-500/25 transition transform active:scale-95 text-xs"
-            >
-              Analyze Your Resume Now
-            </button>
-            <a 
-              href="#sandbox"
-              className="px-7 py-4 bg-gray-900/80 hover:bg-gray-800 border border-gray-800 text-gray-200 hover:text-white font-bold rounded-xl transition text-xs flex items-center gap-2"
-            >
-              Try Live Sandbox ⚡
-            </a>
-          </ScrollReveal>
-        </div>
-
-        {/* HERO MOCKUP GRAPHIC */}
-        <div className="lg:col-span-5 relative">
-          <ScrollReveal delay={450}>
-            <div className="relative mx-auto max-w-[380px] bg-gradient-to-b from-[#1E293B]/70 to-[#0F172A]/90 border border-gray-800 p-6 rounded-3xl shadow-2xl backdrop-blur-sm space-y-6">
-              {/* Header inside mockup */}
-              <div className="flex items-center justify-between border-b border-gray-800/60 pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                </div>
-                <span className="text-[10px] text-gray-500 font-mono">resumatch_report.json</span>
-              </div>
-
-              {/* Matching Circle */}
-              <div className="flex flex-col items-center justify-center py-4 space-y-2">
-                <div className="relative w-32 h-32 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <path className="text-gray-800" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    <path className="text-indigo-500 stroke-dasharray-[78,100]" strokeWidth="2.5" strokeLinecap="round" stroke="currentColor" fill="none" strokeDasharray="78, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <span className="text-2xl font-black text-white">78%</span>
-                    <span className="text-[8px] uppercase tracking-wider text-gray-500 font-bold">ATS Score</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-green-400 font-bold bg-green-950/35 border border-green-900/30 px-3 py-1 rounded-full">
-                  ✓ High Match Potential
-                </p>
-              </div>
-
-              {/* Feedback badges */}
-              <div className="space-y-2 border-t border-gray-800/60 pt-4">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Identified Missing Keywords</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[9px] bg-red-950/30 text-red-400 border border-red-900/20 px-2 py-0.5 rounded font-mono">FastAPI</span>
-                  <span className="text-[9px] bg-red-950/30 text-red-400 border border-red-900/20 px-2 py-0.5 rounded font-mono">AWS RDS</span>
-                  <span className="text-[9px] bg-red-950/30 text-red-400 border border-red-900/20 px-2 py-0.5 rounded font-mono">Kubernetes</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Float badges decorations */}
-            <div className="absolute top-10 left-[-40px] bg-indigo-600/90 text-white text-[10px] font-bold py-2 px-4 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
-              <span>💎</span> Semantic Match: High Context
-            </div>
-            <div className="absolute bottom-10 right-[-30px] bg-purple-600/90 text-white text-[10px] font-bold py-2 px-4 rounded-xl shadow-xl flex items-center gap-2">
-              <span>⚡</span> Parse Speed: 1.2s
-            </div>
-          </ScrollReveal>
-        </div>
+        <ScrollReveal delay={300}>
+          <p className="text-base sm:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            Built for freshers, priced for students. Stop getting filtered out by campus bots. Check missing tech skills, weak project bullets, and ATS layout traps before you apply.
+          </p>
+        </ScrollReveal>
       </section>
 
-      {/* FEATURES SECTION */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-24 border-t border-gray-900 relative z-10">
+      {/* LIVE NO-SIGNUP SCANNER WIDGET */}
+      <section id="scanner" className="max-w-5xl mx-auto px-6 pb-24 relative z-10">
+        <ScrollReveal delay={350}>
+          <div className="bg-[#111827]/80 border border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-800 gap-2">
+              <div>
+                <h2 className="text-lg font-black text-white flex items-center gap-2">
+                  <span>⚡</span> Instant Free Scan (No Signup Required)
+                </h2>
+                <p className="text-xs text-gray-400">Paste your resume & target job description to get your match score instantly.</p>
+              </div>
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/20 text-indigo-300 text-xs font-bold self-start sm:self-auto">
+                {scansRemaining} of 3 Free Scans Remaining
+              </div>
+            </div>
+
+            {scanError && (
+              <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs font-semibold">
+                ⚠️ {scanError}
+              </div>
+            )}
+
+            <form onSubmit={runLiveScan} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Resume Input Area */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-gray-300">1. Your Resume</label>
+                    <label className="text-[11px] text-indigo-400 hover:text-indigo-300 cursor-pointer font-semibold">
+                      <span>📁 Upload PDF / DOCX</span>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.docx" 
+                        onChange={handleFileUpload} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                  {selectedFile && (
+                    <div className="text-[11px] text-gray-400 font-mono truncate bg-gray-900/60 px-2 py-1 rounded border border-gray-800">
+                      📄 {selectedFile.name}
+                    </div>
+                  )}
+                  <textarea
+                    rows={8}
+                    value={resumeText}
+                    onChange={(e) => setResumeText(e.target.value)}
+                    placeholder="Paste your resume text here (or upload a PDF/DOCX file)..."
+                    className="w-full bg-[#0B0F19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 font-mono transition"
+                  />
+                </div>
+
+                {/* Job Description Input Area */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-300">2. Target Job Description</label>
+                  <textarea
+                    rows={8}
+                    value={jobText}
+                    onChange={(e) => setJobText(e.target.value)}
+                    placeholder="Paste the job requirements from LinkedIn, Internshala, or campus placement drive..."
+                    className="w-full bg-[#0B0F19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 font-mono transition"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <span className="text-[11px] text-gray-400">
+                  🔒 We never train AI models on your resume or share your data.
+                </span>
+                <button
+                  type="submit"
+                  disabled={scanning}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/30 transition transform active:scale-95 disabled:opacity-50"
+                >
+                  {scanning ? 'Analyzing Resume & JD...' : 'Run Free Scan ⚡'}
+                </button>
+              </div>
+            </form>
+
+            {/* REAL SCAN RESULT CARD */}
+            {scanResult && (
+              <div className="mt-8 pt-6 border-t border-gray-800 space-y-6 animate-fadeIn">
+                <div className="p-5 rounded-2xl bg-[#0F172A] border border-indigo-500/40 grid grid-cols-1 md:grid-cols-12 gap-6 items-center shadow-xl">
+                  {/* Score Dial */}
+                  <div className="md:col-span-4 flex flex-col items-center justify-center text-center space-y-2 border-b md:border-b-0 md:border-r border-gray-800 pb-4 md:pb-0">
+                    <div className="relative w-28 h-28 flex items-center justify-center">
+                      <div className="text-4xl font-black text-white">{scanResult.score}%</div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${getScoreBadge(scanResult.score).color}`}>
+                      {getScoreBadge(scanResult.score).text}
+                    </span>
+                  </div>
+
+                  {/* Breakdown & Gaps */}
+                  <div className="md:col-span-8 space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-gray-300">
+                        <span>Exact Keywords Overlap (40% weight):</span>
+                        <span className="font-bold text-indigo-400">{scanResult.breakdown?.lexical}%</span>
+                      </div>
+                      <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${scanResult.breakdown?.lexical}%` }}></div>
+                      </div>
+
+                      <div className="flex justify-between text-xs text-gray-300 pt-1">
+                        <span>Semantic Context & Meaning (60% weight):</span>
+                        <span className="font-bold text-purple-400">{scanResult.breakdown?.semantic}%</span>
+                      </div>
+                      <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scanResult.breakdown?.semantic}%` }}></div>
+                      </div>
+                    </div>
+
+                    {/* Top 3 Missing Gaps */}
+                    {scanResult.top_missing_skills?.length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t border-gray-800/80">
+                        <div className="text-xs font-bold text-amber-400 flex items-center justify-between">
+                          <span>Top Missing Tech Skills to Add:</span>
+                          <span className="text-[10px] text-gray-400 font-normal">
+                            +{scanResult.all_missing_count} total detected
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {scanResult.top_missing_skills.map((skill, i) => (
+                            <span key={i} className="text-xs font-mono px-2.5 py-1 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300 font-semibold">
+                              + {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Triggers */}
+                    <div className="flex flex-wrap gap-3 pt-2">
+                      <button
+                        onClick={() => setScorecardModalOpen(true)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow"
+                      >
+                        <span>📲</span> Share Scorecard (WhatsApp / LinkedIn)
+                      </button>
+                      <button
+                        onClick={onGetStarted}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition"
+                      >
+                        Unlock Full AI Bullet Rewriter →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollReveal>
+      </section>
+
+      {/* FRESHER-FOCUSED FEATURES */}
+      <section id="features" className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-900 relative z-10">
         <ScrollReveal>
           <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-            <h2 className="text-3xl font-black text-white">Full-Stack SaaS Platform Built to Convert</h2>
+            <h2 className="text-3xl font-black text-white">Why Freshers Love ResuMatch</h2>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Explore the advanced features that make ResuMatch the ultimate tool for job seekers, recruiters, and dev integrations.
+              We look past corporate years of experience and grade what fresh graduates actually have: projects, coursework, and core skills.
             </p>
           </div>
         </ScrollReveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
           <ScrollReveal delay={100}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 hover:bg-[#111827]/75 transition group space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400 group-hover:scale-110 transition">
-                🔍
+            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
+                🎯
               </div>
-              <h3 className="text-sm font-bold text-white">Hybrid Match Engine</h3>
+              <h3 className="text-sm font-bold text-white">Campus ATS Scanner</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Uses lexical pattern matches and neural semantic similarity to rate resume relevancy.
+                40% exact keyword match + 60% semantic similarity so campus recruitment bots don't discard your application.
               </p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={200}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 hover:bg-[#111827]/75 transition group space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400 group-hover:scale-110 transition">
-                👥
+            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
+                🛠
               </div>
-              <h3 className="text-sm font-bold text-white">Multi-Tenant Workspaces</h3>
+              <h3 className="text-sm font-bold text-white">Project Quality Checker</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Invite team members, configure custom workflows, and isolate candidates by workspaces.
+                Audits your college projects for explicit tech stacks, your personal role, and measurable outcomes.
               </p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={300}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 hover:bg-[#111827]/75 transition group space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400 group-hover:scale-110 transition">
-                🔑
+            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
+                ✍️
               </div>
-              <h3 className="text-sm font-bold text-white">Developer API Scopes</h3>
+              <h3 className="text-sm font-bold text-white">Weak Verb Detector</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Register hourly rate-limited API keys and trigger scan webhooks directly into your HR pipelines.
+                Flags passive language ("worked on", "assisted") and turns them into strong action verbs ("architected", "built").
               </p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={400}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 hover:bg-[#111827]/75 transition group space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400 group-hover:scale-110 transition">
-                📑
+            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
+                📄
               </div>
-              <h3 className="text-sm font-bold text-white">Structured PDF Exports</h3>
+              <h3 className="text-sm font-bold text-white">1-Page ATS Safe Layout</h3>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Generate clean, printer-friendly reports of scoring breakdowns and recommendations on scan completions.
+                Catches formatting traps like tables, photos, or multi-columns that break Indian hiring portals.
               </p>
             </div>
           </ScrollReveal>
-
         </div>
       </section>
 
-      {/* LIVE SANDBOX TEASER */}
-      <section id="sandbox" className="max-w-7xl mx-auto px-6 py-24 border-t border-gray-900 relative z-10">
+      {/* STUDENT PRICING SECTION */}
+      <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-900 relative z-10">
         <ScrollReveal>
           <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-            <h2 className="text-3xl font-black text-white">Interactive Sandbox Playground</h2>
+            <h2 className="text-3xl font-black text-white">Priced for Students, Not US Executives</h2>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Test drive the lexical parsing logic right now. Paste any text below to run a simulation.
+              No expensive recurring monthly subscriptions. Grab a micro-pass when your placement season starts.
             </p>
           </div>
         </ScrollReveal>
 
-        <ScrollReveal delay={100}>
-          <div className="bg-gradient-to-b from-[#111827]/60 to-[#0F172A]/80 border border-gray-800 p-8 rounded-3xl max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            {/* Input form */}
-            <form onSubmit={runSandboxScan} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Paste Sandbox Resume</label>
-                <textarea 
-                  value={sandboxResume}
-                  onChange={(e) => setSandboxResume(e.target.value)}
-                  placeholder="e.g. Software engineer with experience building web applications using React, Javascript, Node.js..."
-                  className="w-full h-36 p-3 text-xs bg-gray-900/50 border border-gray-850 rounded-xl focus:ring-1 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-gray-300 placeholder-gray-650"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Paste Job Description</label>
-                <textarea 
-                  value={sandboxJob}
-                  onChange={(e) => setSandboxJob(e.target.value)}
-                  placeholder="e.g. Seeking a developer experienced in Python, React, FastAPI, Javascript, and REST APIs."
-                  className="w-full h-36 p-3 text-xs bg-gray-900/50 border border-gray-850 rounded-xl focus:ring-1 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-gray-300 placeholder-gray-650"
-                />
-              </div>
-
-              <button 
-                type="submit"
-                disabled={sandboxLoading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition transform active:scale-95"
-              >
-                {sandboxLoading ? "Processing Scan..." : "Execute Sandbox Scan"}
-              </button>
-            </form>
-
-            {/* Results mockup preview */}
-            <div className="bg-[#0B0F19] rounded-2xl p-6 border border-gray-850 h-[384px] flex flex-col justify-between">
-              {sandboxResult ? (
-                <div className="space-y-6 animate-fade-in flex-1 flex flex-col justify-between">
-                  <div className="flex items-center justify-between border-b border-gray-850 pb-4">
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase">Sandbox Report</p>
-                      <h4 className="text-xs font-bold text-gray-300">Simulated Analysis</h4>
-                    </div>
-                    <span className="text-xs font-black text-indigo-400 bg-indigo-950/45 px-2.5 py-1 rounded-lg border border-indigo-900/35">
-                      {sandboxResult.score}% Match
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[#111827]/40 p-3.5 rounded-xl border border-gray-850/50">
-                      <span className="text-[9px] text-gray-500 font-bold block mb-1">LEXICAL FIT</span>
-                      <span className="text-sm font-black text-indigo-300 font-mono">{sandboxResult.lexical}%</span>
-                    </div>
-                    <div className="bg-[#111827]/40 p-3.5 rounded-xl border border-gray-850/50">
-                      <span className="text-[9px] text-gray-500 font-bold block mb-1">SEMANTIC FIT</span>
-                      <span className="text-sm font-black text-purple-300 font-mono">{sandboxResult.semantic}%</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Recommended Keywords to Add:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sandboxResult.missing.map((word, i) => (
-                        <span key={i} className="text-[9px] bg-red-950/30 text-red-400 border border-red-900/20 px-2.5 py-1 rounded-lg font-semibold font-mono">
-                          + {word}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-indigo-950/20 border border-indigo-900/20 p-3 rounded-xl flex items-center justify-between">
-                    <span className="text-[9px] text-indigo-400 font-bold">Want deep AI suggestions & PDF exports?</span>
-                    <button 
-                      onClick={onGetStarted}
-                      className="text-[9px] bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1 rounded-lg transition"
-                    >
-                      Sign Up
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 space-y-3">
-                  <span className="text-3xl">💻</span>
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-gray-400">Teaser Output Awaiting Input</h4>
-                    <p className="text-[10px] text-gray-650 max-w-xs leading-relaxed">
-                      Enter a resume and job description to verify lexical scan outputs.
-                    </p>
-                  </div>
-                </div>
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {/* Free Tier */}
+          <div className="bg-[#111827]/50 border border-gray-800 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Free Tier</span>
+              <div className="text-3xl font-black text-white">₹0</div>
+              <p className="text-xs text-gray-400">Get your baseline score and top skill gaps before campus tests.</p>
+              <ul className="text-xs space-y-2.5 text-gray-300">
+                <li className="flex items-center gap-2">✓ 3 full ATS scans (no signup needed)</li>
+                <li className="flex items-center gap-2">✓ Top 3 missing tech skills</li>
+                <li className="flex items-center gap-2">✓ Shareable WhatsApp scorecard</li>
+                <li className="flex items-center gap-2 text-gray-500">✕ AI bullet rewriter</li>
+              </ul>
             </div>
+            <button 
+              onClick={() => {
+                const el = document.getElementById('scanner');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl text-xs transition"
+            >
+              Start Free Scan
+            </button>
           </div>
-        </ScrollReveal>
+
+          {/* Sprint Pass */}
+          <div className="bg-[#1E1B4B]/50 border-2 border-indigo-500 p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-2xl">
+            <div className="absolute top-[-12px] left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow">
+              ⚡ Most Popular for Campus Drives
+            </div>
+            <div className="space-y-4 pt-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Sprint Pass</span>
+              <div className="text-3xl font-black text-white">₹199 <span className="text-xs font-normal text-gray-400">/ 14 days</span></div>
+              <p className="text-xs text-gray-300">Perfect for an active 2-week campus drive or internship rush.</p>
+              <ul className="text-xs space-y-2.5 text-gray-200">
+                <li className="flex items-center gap-2">✓ <strong>Unlimited</strong> resume & JD scans</li>
+                <li className="flex items-center gap-2">✓ Grounded AI bullet rewriter</li>
+                <li className="flex items-center gap-2">✓ "Tailor to this Job" 1-click generator</li>
+                <li className="flex items-center gap-2">✓ 3-4 fresher ATS templates (PDF & DOCX)</li>
+                <li className="flex items-center gap-2">✓ One-tap Razorpay UPI payment</li>
+              </ul>
+            </div>
+            <button 
+              onClick={onGetStarted}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-indigo-600/30"
+            >
+              Get Sprint Pass (₹199)
+            </button>
+          </div>
+
+          {/* Placement Season */}
+          <div className="bg-[#111827]/50 border border-gray-800 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Placement Season</span>
+              <div className="text-3xl font-black text-white">₹499 <span className="text-xs font-normal text-gray-400">/ 3 months</span></div>
+              <p className="text-xs text-gray-400">For students navigating the entire 3-month placement cycle.</p>
+              <ul className="text-xs space-y-2.5 text-gray-300">
+                <li className="flex items-center gap-2">✓ Everything in Sprint Pass</li>
+                <li className="flex items-center gap-2">✓ Full 90 days access</li>
+                <li className="flex items-center gap-2">✓ Priority Gemini AI suggestions</li>
+                <li className="flex items-center gap-2">✓ Job Application Tracker</li>
+              </ul>
+            </div>
+            <button 
+              onClick={onGetStarted}
+              className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl text-xs transition"
+            >
+              Get Placement Pass (₹499)
+            </button>
+          </div>
+        </div>
       </section>
 
-      {/* PRICING SECTION */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 py-24 border-t border-gray-900 relative z-10">
-        <ScrollReveal>
-          <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-            <h2 className="text-3xl font-black text-white font-extrabold tracking-tight">Flexible SaaS Pricing Plans</h2>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Start with our free sandbox or scale up to get full team collaboration and REST API pipelines.
+      {/* STUDENT PRIVACY TRUST BANNER */}
+      <section className="max-w-5xl mx-auto px-6 py-12">
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/40 to-purple-950/40 border border-indigo-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+              <span>🛡️</span> 100% Student Data Privacy Pledge (DPDP Act)
+            </h4>
+            <p className="text-xs text-gray-400">
+              We never train AI models on your resumes, never sell student data, and provide 1-click data deletion.
             </p>
           </div>
-        </ScrollReveal>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
-          
-          {/* Card 1: Free Sandbox */}
-          <ScrollReveal delay={100} className="flex">
-            <div className="bg-[#111827]/20 border border-gray-850 p-8 rounded-3xl flex flex-col justify-between flex-1 relative hover:border-gray-800 transition">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-300">Free Sandbox</h3>
-                  <p className="text-xs text-gray-500 mt-1">Perfect for trying out the engine.</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-white">$0</span>
-                  <span className="text-xs text-gray-500">/ forever</span>
-                </div>
-                <ul className="space-y-3 text-xs text-gray-400 border-t border-gray-850 pt-6">
-                  <li className="flex items-center gap-2">✓ 10 Resume Scans</li>
-                  <li className="flex items-center gap-2">✓ Basic Keyword Matching</li>
-                  <li className="flex items-center gap-2">✓ 1 Organization Workspace</li>
-                  <li className="flex items-center gap-2 text-gray-650">✗ Advanced AI Recommendations</li>
-                  <li className="flex items-center gap-2 text-gray-650">✗ Developer API Access</li>
-                </ul>
-              </div>
-              <button 
-                onClick={onGetStarted}
-                className="w-full mt-8 py-3 bg-gray-900/60 hover:bg-gray-800 border border-gray-850 text-white font-bold rounded-xl text-xs transition"
-              >
-                Sign Up Free
-              </button>
-            </div>
-          </ScrollReveal>
-
-          {/* Card 2: Pro Tier */}
-          <ScrollReveal delay={200} className="flex">
-            <div className="bg-[#111827]/40 border-2 border-indigo-500 p-8 rounded-3xl flex flex-col justify-between flex-1 relative shadow-xl shadow-indigo-500/5 hover:bg-[#111827]/60 transition">
-              <div className="absolute top-[-14px] right-6 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full">
-                Most Popular
-              </div>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-indigo-400">Pro Tier</h3>
-                  <p className="text-xs text-gray-400 mt-1">For serious job hunters and designers.</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-white">$19</span>
-                  <span className="text-xs text-indigo-400">/ month</span>
-                </div>
-                <ul className="space-y-3 text-xs text-gray-300 border-t border-gray-800 pt-6">
-                  <li className="flex items-center gap-2 text-indigo-400">✓ Unlimited Scan History</li>
-                  <li className="flex items-center gap-2">✓ Advanced AI Recommendations</li>
-                  <li className="flex items-center gap-2">✓ Bullet Point Rewrite Suggestions</li>
-                  <li className="flex items-center gap-2">✓ Structured PDF Report Exports</li>
-                  <li className="flex items-center gap-2">✓ 1 Developer API Key</li>
-                </ul>
-              </div>
-              <button 
-                onClick={onGetStarted}
-                className="w-full mt-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-indigo-500/20"
-              >
-                Go Pro Now
-              </button>
-            </div>
-          </ScrollReveal>
-
-          {/* Card 3: Team Recruiter */}
-          <ScrollReveal delay={300} className="flex">
-            <div className="bg-[#111827]/20 border border-gray-850 p-8 rounded-3xl flex flex-col justify-between flex-1 relative hover:border-gray-800 transition">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-300">Team / Agency</h3>
-                  <p className="text-xs text-gray-500 mt-1">For staffing bureaus & recruiters.</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-white">$49</span>
-                  <span className="text-xs text-gray-500">/ month</span>
-                </div>
-                <ul className="space-y-3 text-xs text-gray-400 border-t border-gray-850 pt-6">
-                  <li className="flex items-center gap-2">✓ Everything in Pro Tier</li>
-                  <li className="flex items-center gap-2">✓ Up to 5 Team Workspace seats</li>
-                  <li className="flex items-center gap-2">✓ 5 Developer API keys</li>
-                  <li className="flex items-center gap-2">✓ 10,000 API Requests / hr</li>
-                  <li className="flex items-center gap-2">✓ Collaborative Scoring metrics</li>
-                </ul>
-              </div>
-              <button 
-                onClick={onGetStarted}
-                className="w-full mt-8 py-3 bg-gray-900/60 hover:bg-gray-800 border border-gray-850 text-white font-bold rounded-xl text-xs transition"
-              >
-                Contact Sales
-              </button>
-            </div>
-          </ScrollReveal>
-
+          <span className="text-[11px] font-bold text-indigo-300 bg-indigo-950/80 px-3 py-1.5 rounded-full border border-indigo-500/30 whitespace-nowrap">
+            Encrypted & Private
+          </span>
         </div>
       </section>
 
       {/* FAQ SECTION */}
-      <section id="faq" className="max-w-4xl mx-auto px-6 py-24 border-t border-gray-900 relative z-10">
+      <section id="faq" className="max-w-3xl mx-auto px-6 py-20 border-t border-gray-900 relative z-10">
         <ScrollReveal>
-          <div className="text-center mb-16 space-y-3">
-            <h2 className="text-3xl font-black text-white">Frequently Asked Questions</h2>
-            <p className="text-xs text-gray-400">
-              Find answers to the most common queries about ResuMatch.
-            </p>
+          <div className="text-center mb-12 space-y-2">
+            <h2 className="text-2xl font-black text-white">Frequently Asked Questions</h2>
+            <p className="text-xs text-gray-400">Honest answers for students and campus applicants.</p>
           </div>
         </ScrollReveal>
 
         <div className="space-y-4">
           {faqs.map((faq, idx) => (
-            <ScrollReveal key={idx} delay={idx * 50}>
-              <div 
-                className="bg-[#111827]/25 border border-gray-850 rounded-2xl overflow-hidden cursor-pointer hover:border-gray-800 transition"
+            <div key={idx} className="border border-gray-800 rounded-2xl overflow-hidden bg-[#111827]/40">
+              <button
                 onClick={() => toggleFaq(idx)}
+                className="w-full p-5 text-left text-xs font-bold text-gray-200 hover:text-white flex items-center justify-between transition"
               >
-                <div className="p-5 flex items-center justify-between text-xs font-bold text-gray-200">
-                  <span>{faq.q}</span>
-                  <span className="text-indigo-400 font-bold text-lg select-none">
-                    {activeFaq === idx ? '−' : '+'}
-                  </span>
+                <span>{faq.q}</span>
+                <span className="text-indigo-400">{activeFaq === idx ? '−' : '+'}</span>
+              </button>
+              {activeFaq === idx && (
+                <div className="px-5 pb-5 text-xs text-gray-400 leading-relaxed border-t border-gray-800/50 pt-3">
+                  {faq.a}
                 </div>
-                
-                {activeFaq === idx && (
-                  <div className="px-5 pb-5 text-xs text-gray-400 leading-relaxed border-t border-gray-850/40 pt-3.5 animate-fade-in">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            </ScrollReveal>
+              )}
+            </div>
           ))}
         </div>
       </section>
 
-      {/* MARKETING FOOTER */}
-      <footer className="border-t border-gray-900 bg-[#070A10]/95 py-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-gray-500 font-semibold">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-[11px]">
-              RM
-            </div>
-            <span className="text-gray-300 font-bold">ResuMatch Platform</span>
-          </div>
-          
-          <p>© {new Date().getFullYear()} ResuMatch. All rights reserved.</p>
-
-          <div className="flex items-center gap-6">
-            <a href="#features" className="hover:text-gray-300 transition">Terms</a>
-            <a href="#features" className="hover:text-gray-300 transition">Privacy</a>
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-gray-300 transition">LinkedIn</a>
-          </div>
-        </div>
+      {/* FOOTER */}
+      <footer className="border-t border-gray-900 py-8 text-center text-xs text-gray-600">
+        <p>© 2026 ResuMatch AI — Built for freshers in India. All rights reserved.</p>
       </footer>
 
+      {/* SCORECARD MODAL */}
+      <ScorecardModal 
+        isOpen={scorecardModalOpen}
+        onClose={() => setScorecardModalOpen(false)}
+        scorecard={scanResult}
+      />
     </div>
   );
 }

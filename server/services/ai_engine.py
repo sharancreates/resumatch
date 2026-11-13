@@ -274,27 +274,37 @@ COMMON_SKILLS = [
 _nlp = None
 _matcher = None
 _spacy_lock = threading.Lock()
+_spacy_initialized = False
 
 def _init_spacy():
-    global _nlp, _matcher
+    global _nlp, _matcher, _spacy_initialized
+    if _spacy_initialized:
+        return _nlp, _matcher
     with _spacy_lock:
-        if _nlp is None:
+        if _spacy_initialized:
+            return _nlp, _matcher
+        try:
+            import spacy
+            from spacy.matcher import PhraseMatcher
             try:
-                import spacy
-                from spacy.matcher import PhraseMatcher
+                _nlp = spacy.load("en_core_web_sm")
+            except Exception:
                 try:
-                    _nlp = spacy.load("en_core_web_sm")
-                except OSError:
                     from spacy.cli import download
                     download("en_core_web_sm")
                     _nlp = spacy.load("en_core_web_sm")
+                except (Exception, SystemExit, BaseException):
+                    _nlp = None
+            if _nlp is not None:
                 _matcher = PhraseMatcher(_nlp.vocab, attr="LOWER")
                 patterns = [_nlp.make_doc(skill) for skill in COMMON_SKILLS]
                 _matcher.add("SKILLS", patterns)
-            except Exception as ex:
-                logger.warning(f"SpaCy not available: {ex}. Using regex fallback.")
-                _nlp = None
-                _matcher = None
+        except (Exception, BaseException) as ex:
+            logger.warning(f"SpaCy not available: {ex}. Using regex fallback.")
+            _nlp = None
+            _matcher = None
+        finally:
+            _spacy_initialized = True
         return _nlp, _matcher
 
 def extract_skills_and_entities(text):
