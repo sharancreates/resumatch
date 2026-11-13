@@ -6,6 +6,8 @@ export default function ScorecardModal({ isOpen, onClose, scorecard }) {
   if (!isOpen || !scorecard) return null;
 
   const score = scorecard.score ?? 75;
+  const fresherScore = scorecard.fresher_score ?? scorecard.fresher_audit?.fresher_score;
+  const verdict = scorecard.readiness_verdict ?? scorecard.fresher_audit?.readiness_verdict;
   const lexical = scorecard.lexical_score ?? scorecard.breakdown?.lexical ?? 65;
   const semantic = scorecard.semantic_score ?? scorecard.breakdown?.semantic ?? 80;
   const missing = scorecard.top_missing_skills ?? scorecard.missing ?? [];
@@ -67,11 +69,16 @@ export default function ScorecardModal({ isOpen, onClose, scorecard }) {
 
         {/* Visual Score Card Preview */}
         <div className="p-5 rounded-2xl bg-gradient-to-b from-[#1E293B]/90 to-[#0B0F19] border border-gray-800 space-y-5 shadow-inner">
-          <div className="flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center gap-2">
             <div className={`relative w-28 h-28 rounded-full border-4 flex flex-col items-center justify-center shadow-lg ${getScoreColor(score)}`}>
               <span className="text-3xl font-black">{score}%</span>
               <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Match Score</span>
             </div>
+            {fresherScore !== undefined && (
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300">
+                🎓 Fresher Readiness: {fresherScore}% {verdict ? `(${verdict})` : ''}
+              </span>
+            )}
           </div>
 
           {/* Lexical vs Semantic Breakdown */}
