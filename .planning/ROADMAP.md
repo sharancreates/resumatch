@@ -29,12 +29,12 @@
 - [x] **Task 2.4**: Scope all resume analysis queries, scan history listings, and deletions to the active organization.
 - [x] **Task 2.5**: Wire audit logging on organization membership changes, API key operations, and quota updates.
 
-### Phase 3: Cloud Storage Integration & Shareable Reports
+### Phase 3: Cloud Storage Integration & Shareable Reports [COMPLETED]
 **Goal**: Store real resume documents and persist shareable ATS evaluation reports.
-- [ ] **Task 3.1**: Connect `server/utils/storage.py` (AWS S3 / Cloudflare R2) to `server/routes/analyze.py` upload handlers, replacing the `"database-direct"` placeholder.
-- [ ] **Task 3.2**: Implement secure presigned URL generation or authenticated stream proxy for resume downloads.
-- [ ] **Task 3.3**: Persist generated ReportLab PDF evaluations to cloud storage and create database records in `Report`.
-- [ ] **Task 3.4**: Build shareable public/restricted report link endpoints (`/api/reports/{report_id}`).
+- [x] **Task 3.1**: Connect `server/utils/storage.py` (AWS S3 / Cloudflare R2) to `server/routes/analyze.py` upload handlers, replacing the `"database-direct"` placeholder.
+- [x] **Task 3.2**: Implement secure presigned URL generation or authenticated stream proxy for resume downloads.
+- [x] **Task 3.3**: Persist generated ReportLab PDF evaluations to cloud storage and create database records in `Report`.
+- [x] **Task 3.4**: Build shareable public/restricted report link endpoints (`/api/reports/{report_id}`).
 
 ### Phase 4: Stripe Billing Lifecycle & Access Guardrails
 **Goal**: Complete SaaS billing automation and eliminate security bypasses.

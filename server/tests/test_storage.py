@@ -53,3 +53,22 @@ def test_parse_pdf_and_upload():
     local_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
     if os.path.exists(local_path):
         os.remove(local_path)
+
+def test_presigned_url_local_fallback():
+    from utils.storage import generate_presigned_url
+    local_url = "/api/uploads/sample-1234.pdf"
+    presigned = generate_presigned_url(local_url)
+    assert presigned == local_url
+    assert generate_presigned_url("") == ""
+
+def test_delete_file_local():
+    from utils.storage import upload_file, delete_file
+    file_bytes = b"Temp file content"
+    file_url = upload_file(file_bytes, "temp.txt", "text/plain")
+    assert delete_file(file_url) is True
+    assert delete_file(file_url) is False  # Second time should be False
+
+def test_directory_traversal_detection():
+    # Attempting to fetch a traversal path should return 400
+    res = client.get("/api/uploads/..%2Fetc%2Fpasswd")
+    assert res.status_code in [400, 404]
