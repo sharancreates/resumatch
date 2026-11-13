@@ -4,8 +4,8 @@
 
 - **Status**: Development
 - **Milestone**: Milestone 2 — Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
-- **Active Phase**: Phase 6 — Student Landing Experience & Instant Free Scan (Ready to Plan)
-- **Branch**: `main`
+- **Active Phase**: Phase 6 — Student Landing Experience & Instant Free Scan (Planned)
+- **Branch**: `phase-6`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
