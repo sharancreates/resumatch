@@ -69,6 +69,16 @@ class AnalyzeRequest(BaseModel):
     file_url: str | None = None
 
 
+class RewriteBulletRequest(BaseModel):
+    bullet: str
+    target_keyword: str | None = None
+    project_title: str | None = None
+
+
+class TailorResumeRequest(BaseModel):
+    job_title: str | None = None
+
+
 @analyze_router.post('/analyze/public')
 @limiter.limit("15/minute")
 async def analyze_public_endpoint(request: Request, req: PublicAnalyzeRequest):
@@ -720,6 +730,109 @@ def get_bullet_suggestions(analysis_id: str, user: User = Depends(get_current_us
     except Exception as e:
         logger.error(f"Suggestions Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch suggestions.")
+
+@analyze_router.post('/analyze/{analysis_id}/rewrite-bullet')
+async def rewrite_bullet_endpoint(
+    analysis_id: str,
+    req: RewriteBulletRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Rewrites a single resume bullet point using strict anti-hallucination rules and metric placeholders.
+    Enforces per-user daily LLM call limits.
+    """
+    analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis record not found.")
+
+    resume = db.query(Resume).filter(Resume.id == analysis.resume_id).first()
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden.")
+
+    from services.bullet_rewriter import rewrite_single_bullet, check_and_increment_llm_quota
+    remaining_quota = check_and_increment_llm_quota(user.id, user.is_premium)
+
+    rewrite_res = await run_in_threadpool(
+        rewrite_single_bullet,
+        req.bullet,
+        req.target_keyword,
+        req.project_title
+    )
+
+    return {
+        "status": "success",
+        "data": {
+            **rewrite_res,
+            "quota_remaining": remaining_quota
+        }
+    }
+
+@analyze_router.post('/analyze/{analysis_id}/tailor')
+async def tailor_resume_endpoint(
+    analysis_id: str,
+    req: TailorResumeRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    1-click job tailoring: Generates a tailored resume version groundedly incorporating missing keywords,
+    saving it as a new version in the database.
+    """
+    if not user.is_premium:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="1-Click Job Tailoring is a Premium feature. Grab a Sprint Pass (₹199) or Placement Season pass to unlock!"
+        )
+
+    analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis record not found.")
+
+    resume = db.query(Resume).filter(Resume.id == analysis.resume_id).first()
+    if not resume or resume.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Forbidden.")
+
+    version = db.query(ResumeVersion).filter(ResumeVersion.id == analysis.resume_version_id).first()
+    job = db.query(JobDescription).filter(JobDescription.id == analysis.job_description_id).first()
+
+    if not version or not job:
+        raise HTTPException(status_code=400, detail="Missing resume version or job description text.")
+
+    from services.bullet_rewriter import tailor_resume_to_job, check_and_increment_llm_quota
+    remaining_quota = check_and_increment_llm_quota(user.id, user.is_premium)
+
+    tailor_res = await run_in_threadpool(
+        tailor_resume_to_job,
+        version.resume_text,
+        job.job_text,
+        analysis.missing_keywords or []
+    )
+
+    # Persist new ResumeVersion
+    version_count = db.query(ResumeVersion).filter(ResumeVersion.resume_id == resume.id).count()
+    new_version = ResumeVersion(
+        id=str(uuid.uuid4()),
+        resume_id=resume.id,
+        version=version_count + 1,
+        file_url=f"tailored-{job.title[:30] if job.title else 'job'}",
+        resume_text=tailor_res["tailored_text"],
+        parsed_json={"tailored": True, "base_version": version.version, "job_id": job.id}
+    )
+    db.add(new_version)
+    db.commit()
+
+    return {
+        "status": "success",
+        "data": {
+            "new_version_id": new_version.id,
+            "version_number": new_version.version,
+            "tailored_text": tailor_res["tailored_text"],
+            "changes_summary": tailor_res["changes_summary"],
+            "keywords_integrated": tailor_res["keywords_integrated"],
+            "quota_remaining": remaining_quota
+        }
+    }
 
 @analyze_router.get('/history/{analysis_id}/export')
 def export_report_endpoint(analysis_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):

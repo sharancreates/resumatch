@@ -153,3 +153,4 @@ def test_run_fresher_audit_end_to_end():
     empty_audit = run_fresher_audit("")
     assert empty_audit["fresher_score"] == 0
     assert empty_audit["readiness_verdict"] == "Empty Resume"
+

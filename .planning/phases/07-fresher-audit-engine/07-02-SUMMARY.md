@@ -38,3 +38,4 @@ Created the interactive Fresher Audit Dashboard (`client/src/components/FresherA
 - `npm run lint` in `client`: Passed with 0 errors and 0 warnings.
 - `npm run build` in `client`: Production build succeeded in 4.33s with all chunks resolved.
 - Backend pytest tests in `server/tests/test_fresher_auditor.py`: 7 of 7 passed in 0.19s.
+

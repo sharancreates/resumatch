@@ -4,8 +4,8 @@
 
 - **Status**: Development
 - **Milestone**: Milestone 2 — Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
-- **Active Phase**: Phase 8 — Grounded AI Bullet Rewriter & 1-Click Job Tailoring (Ready to Plan)
-- **Branch**: `phase-7`
+- **Active Phase**: Phase 9 — Fresher ATS Templates & Multi-Format Export (Ready to Plan)
+- **Branch**: `phase-8`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -13,8 +13,8 @@
 
 ## 2. Immediate Priorities & Next Steps
 
-1. **[P0] Plan Phase 8**: Run `/gsd-plan-phase 8` to design the Grounded AI Bullet Rewriter prompt with anti-hallucination guardrails and 1-click job tailoring.
-2. **[P1] Merge Phase 7**: Merge `phase-7` into `main` after review.
+1. **[P0] Plan Phase 9**: Run `/gsd-plan-phase 9` to design the 3-4 clean fresher resume templates, ReportLab PDF generator, and python-docx export pipeline.
+2. **[P1] Merge Phase 8**: Merge `phase-8` into `main` after review.
 
 ---
 
@@ -32,6 +32,7 @@
 - **2026-11-13: Milestone 2 Initiated (Fresher-Focused Product Pivot)**: Repositioned ResuMatch AI around Indian students and freshers applying for campus placements, internships, and entry tech jobs. Defined 5 focused phases (Phases 6–10) covering no-signup free scans, fresher diagnostics, grounded AI bullet rewriter, ATS templates & exports, and student micro-pricing (₹199 / ₹499) with Razorpay UPI. Frozen enterprise workspaces from consumer flows.
 - **2026-11-13: Phase 6 Completed (Student Landing & Instant Free Scan)**: Rebranded landing page copy with friendly senior voice, built live frictionless scan widget (`POST /api/analyze/public`), enforced 3-scan anonymous IP/session quota (HTTP 429), built viral social scorecard modal (`ScorecardModal.jsx`) with WhatsApp and LinkedIn sharing, added DPDP privacy guarantees, and verified with frontend Vitest/linting and backend pytest suite. (4/4 UAT passed).
 - **2026-11-13: Phase 7 Completed (Fresher-Specific Resume Audit Engine)**: Built the 4-pillar Fresher Audit Engine (`fresher_auditor.py`) evaluating Project Quality (tech stacks, metrics, role), Missing Links/Sections (GitHub, LinkedIn, grouped skills, coursework), Action Verbs ("worked on" → active replacement verbs), and ATS Layout (1-page constraint, tables check). Built `FresherAuditPanel.jsx`, integrated into `ResultDisplay.jsx`, `LandingPage.jsx`, and `ScorecardModal.jsx`, and verified with 7/7 backend unit tests and 0-error frontend lint/build. (5/5 UAT passed).
+- **2026-11-13: Phase 8 Completed (Grounded AI Bullet Rewriter & 1-Click Job Tailoring)**: Built `bullet_rewriter.py` with strict anti-hallucination guardrails and dynamic metric insertion placeholders (`[Add your metric: e.g. 500+ users / 35% speedup]`). Wired `POST /api/analyze/{id}/rewrite-bullet` and `POST /api/analyze/{id}/tailor` persisting new `ResumeVersion` records. Enforced daily per-user LLM call limits (NFR-COST-01). Created interactive `BulletRewriterModal.jsx` with real-time metric substitution and `JobTailorModal.jsx` with before/after diffs, and verified with 5/5 backend tests and 0-error frontend lint/build. (5/5 UAT passed).
 
 ---
 
