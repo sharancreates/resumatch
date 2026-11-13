@@ -4,8 +4,8 @@
 
 - **Status**: Development
 - **Milestone**: Milestone 2 — Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
-- **Active Phase**: Phase 7 — Fresher-Specific Resume Audit Engine (Ready to Plan)
-- **Branch**: `phase-6`
+- **Active Phase**: Phase 7 — Fresher-Specific Resume Audit Engine (Planned)
+- **Branch**: `phase-7`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -13,8 +13,8 @@
 
 ## 2. Immediate Priorities & Next Steps
 
-1. **[P0] Plan Phase 7**: Run `/gsd-plan-phase 7` to design the Project Quality Checker, Action Verb Detector, Missing Sections & Links Auditor, and ATS Layout Validator.
-2. **[P1] Merge Phase 6**: Merge `phase-6` into `main` after review.
+1. **[P0] Execute Phase 7**: Run `/gsd-execute-phase 7` to build the 4-pillar Fresher Audit Engine (`fresher_auditor.py`) and the interactive `FresherAuditPanel.jsx` UI.
+2. **[P1] Verification**: Verify with pytest and vitest suites.
 
 ---
 
