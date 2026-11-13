@@ -34,3 +34,4 @@ Redesigned the ResuMatch landing page with a student-first, friendly senior bran
 - `npm run lint` in `client`: Passed with 0 errors and 0 warnings.
 - `npm run build` in `client`: Production build succeeded in 21.20s with all chunks resolved.
 - Backend public scan tests (`server/tests/test_public_scan.py`): 4 of 4 tests passed in pytest.
+
