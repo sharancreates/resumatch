@@ -30,3 +30,4 @@ Built the Grounded AI Bullet Rewriter engine (`server/services/bullet_rewriter.p
 ## 3. Verification
 - `python -m py_compile` passed on all modified backend files.
 - Pytest suite `server/tests/test_bullet_rewriter.py` passed all 5 test cases.
+

@@ -105,3 +105,4 @@ describe('JobTailorModal Component', () => {
     expect(container.firstChild).toBeNull();
   });
 });
+
