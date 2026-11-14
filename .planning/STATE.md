@@ -4,8 +4,8 @@
 
 - **Status**: Development
 - **Milestone**: Milestone 2 — Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
-- **Active Phase**: Phase 9 — Fresher ATS Templates & Multi-Format Export (Ready to Plan)
-- **Branch**: `phase-8`
+- **Active Phase**: Phase 9 — Fresher ATS Templates & Multi-Format Export (Planned)
+- **Branch**: `phase-9`
 - **Codebase Map**: Complete (7 documents in `.planning/codebase/`)
 - **Planning Setup**: Complete (`PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`)
 
@@ -13,8 +13,8 @@
 
 ## 2. Immediate Priorities & Next Steps
 
-1. **[P0] Plan Phase 9**: Run `/gsd-plan-phase 9` to design the 3-4 clean fresher resume templates, ReportLab PDF generator, and python-docx export pipeline.
-2. **[P1] Merge Phase 8**: Merge `phase-8` into `main` after review.
+1. **[P0] Execute Phase 9**: Run `/gsd-execute-phase 9` to build the 4 fresher resume templates, ReportLab PDF and python-docx export pipeline, and `ExportResumeModal.jsx`.
+2. **[P1] Verification**: Verify with pytest and vitest suites.
 
 ---
 
