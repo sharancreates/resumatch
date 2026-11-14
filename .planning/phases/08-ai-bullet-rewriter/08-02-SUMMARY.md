@@ -36,3 +36,4 @@ Implemented the interactive user interfaces for Grounded AI Bullet Rewriting (`B
 - `npm run lint` in `client`: 0 errors, 0 warnings.
 - `npm run build` in `client`: Production bundle successfully built in 12.97s.
 - Pytest backend tests (`server/tests/test_bullet_rewriter.py`): 5/5 passed.
+

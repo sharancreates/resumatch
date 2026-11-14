@@ -22,3 +22,4 @@
 ## Sign-off
 - All Phase 8 deliverables verified and accepted.
 - ResuMatch now features a grounded, truthful bullet rewriter and 1-click job tailoring engine.
+
