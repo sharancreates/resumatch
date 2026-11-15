@@ -37,3 +37,4 @@ Built the student-first pricing modal (`StudentPricingModal.jsx`), Razorpay UPI 
 - `npm run lint` in `client`: Passed with 0 errors and 0 warnings.
 - `npm run build` in `client`: Production build succeeded in 8.32s with zero warnings.
 - All 19 backend billing, pricing, and template tests passed in 6.87s.
+

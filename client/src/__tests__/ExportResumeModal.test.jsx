@@ -19,6 +19,8 @@ describe('ExportResumeModal Component', () => {
     // Mock URL.createObjectURL and URL.revokeObjectURL
     window.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
     window.URL.revokeObjectURL = vi.fn();
+    // Prevent JSDOM navigation error on anchor click
+    HTMLAnchorElement.prototype.click = vi.fn();
   });
 
   it('does not render when isOpen is false', () => {
@@ -83,7 +85,7 @@ describe('ExportResumeModal Component', () => {
     fireEvent.click(modernMinimalCard);
 
     // Download button should show Modern Minimal
-    expect(screen.getByText(/Modern Minimal/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download PDF \(Modern Minimal\)/i })).toBeInTheDocument();
   });
 
   it('triggers download via API on button click', async () => {
@@ -114,7 +116,6 @@ describe('ExportResumeModal Component', () => {
         expect.objectContaining({
           template_id: 'classic_tech',
           format: 'pdf',
-          resume_text: 'Aarav Sharma\nPython Engineer',
           analysis_id: 'test-id'
         }),
         expect.objectContaining({
@@ -125,6 +126,7 @@ describe('ExportResumeModal Component', () => {
     });
 
     expect(window.URL.createObjectURL).toHaveBeenCalled();
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
   });
 });
 

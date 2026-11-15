@@ -46,3 +46,4 @@ Replaced legacy recurring enterprise subscription models with student-centric mi
 - `python -m py_compile` passed on all modified backend files.
 - Pytest suite `server/tests/test_student_pricing.py` passed 7/7 tests in 1.85s.
 - Full billing and templates test suite passed all 19 tests in 6.87s.
+

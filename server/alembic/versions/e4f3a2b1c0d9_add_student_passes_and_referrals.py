@@ -48,3 +48,4 @@ def downgrade() -> None:
     # 2. Remove referral_code from users
     op.drop_index('ix_users_referral_code', table_name='users')
     op.drop_column('users', 'referral_code')
+

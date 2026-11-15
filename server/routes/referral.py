@@ -140,3 +140,4 @@ def get_my_referral_info(
         "days_earned": days_earned,
         "reward_rule": "Invite 3 friends to get 7 days of free Sprint Pass!"
     }
+

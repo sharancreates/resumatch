@@ -85,7 +85,7 @@ describe('FresherAuditPanel Component', () => {
     fireEvent.click(projectTab);
 
     expect(screen.getByText(/Distributed Task Queue/i)).toBeInTheDocument();
-    expect(screen.getByText(/Placement Portal/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Placement Portal/i).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/python/i)).toBeInTheDocument();
     expect(screen.getByText(/fastapi/i)).toBeInTheDocument();
     expect(screen.getAllByText(/✓ Quantified/i).length).toBeGreaterThanOrEqual(1);

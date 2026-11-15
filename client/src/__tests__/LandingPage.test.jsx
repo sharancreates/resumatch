@@ -43,18 +43,18 @@ describe('LandingPage Component (Fresher Experience)', () => {
     expect(screen.getByPlaceholderText(/Paste the job requirements/i)).toBeInTheDocument();
 
     // Action button
-    expect(screen.getByRole('button', { name: /Run Free ATS Match Scan/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Run Free Scan/i })).toBeInTheDocument();
   });
 
   it('renders DPDP privacy guarantee banner and student pricing', () => {
     render(<LandingPage onGetStarted={vi.fn()} onLogin={vi.fn()} />);
 
     // DPDP banner
-    expect(screen.getByText(/100% Student Privacy Guarantee \(DPDP Act 2023 Compliant\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Zero training on your resumes/i)).toBeInTheDocument();
+    expect(screen.getByText(/100% Student Data Privacy Pledge \(DPDP Act\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/We never train AI models on your resumes/i)).toBeInTheDocument();
 
     // Student pricing
-    expect(screen.getByText(/Student Micro-Pricing/i)).toBeInTheDocument();
+    expect(screen.getByText(/Student Pricing/i)).toBeInTheDocument();
     expect(screen.getByText(/Sprint Pass/i)).toBeInTheDocument();
     expect(screen.getByText(/Placement Season/i)).toBeInTheDocument();
   });
@@ -78,7 +78,7 @@ describe('LandingPage Component (Fresher Experience)', () => {
   it('validates empty inputs before running free scan', () => {
     render(<LandingPage onGetStarted={vi.fn()} onLogin={vi.fn()} />);
 
-    const scanBtn = screen.getByRole('button', { name: /Run Free ATS Match Scan/i });
+    const scanBtn = screen.getByRole('button', { name: /Run Free Scan/i });
     fireEvent.click(scanBtn);
 
     expect(screen.getByText(/Please provide both your resume and the target job description/i)).toBeInTheDocument();
