@@ -49,25 +49,28 @@ function ResumeDropzone({
       onDrop={handleDrop}
     >
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">1. Your Resume</label>
+        <label htmlFor="resume-dropzone-textarea" className="text-sm font-bold text-gray-700 dark:text-gray-300">
+          1. Your Resume
+        </label>
         
         {/* Document Upload Button */}
         <div className="relative">
           <input 
             type="file" 
             accept=".pdf,.docx" 
-            onChange={handleChange}
+            onChange={handleChange} 
             ref={fileInputRef}
             className="hidden" 
           />
           <button 
+            type="button"
             onClick={() => fileInputRef.current.click()}
             disabled={uploading}
-            className="text-xs flex items-center gap-1 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition font-semibold"
+            className="text-xs flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition font-semibold focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             {uploading ? (
-              <span className="flex items-center gap-1">
-                <svg className="animate-spin h-3.5 w-3.5 text-indigo-600 dark:text-indigo-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <span className="flex items-center gap-1.5">
+                <svg className="animate-spin h-3.5 w-3.5 text-blue-600 dark:text-blue-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -85,22 +88,23 @@ function ResumeDropzone({
 
       <div className="relative">
         <textarea 
-          className={`w-full h-48 p-3 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400
-            ${dragActive ? 'border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500' : ''}
+          id="resume-dropzone-textarea"
+          className={`w-full h-48 p-3 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400
+            ${dragActive ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-500' : ''}
           `}
           placeholder="Paste text or drag & drop PDF/DOCX here..."
           value={resume}
           onChange={(e) => setResume(e.target.value)}
         />
 
-        {/* Drag Over Active Overlay */}
+        {/* Drag Over Active Overlay - Clean smooth scale rather than bounce */}
         {dragActive && (
-          <div className="absolute inset-0 bg-indigo-50/90 dark:bg-gray-800/90 border-2 border-dashed border-indigo-500 dark:border-indigo-400 rounded-lg flex flex-col items-center justify-center gap-2 pointer-events-none z-10 transition-all duration-200">
-            <svg className="w-10 h-10 text-indigo-600 dark:text-indigo-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="absolute inset-0 bg-blue-50/90 dark:bg-gray-800/90 border-2 border-dashed border-blue-500 dark:border-blue-400 rounded-lg flex flex-col items-center justify-center gap-2 pointer-events-none z-10 transition-all duration-200">
+            <svg className="w-10 h-10 text-blue-600 dark:text-blue-400 transition-transform transform scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
-            <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Drop PDF or DOCX Resume here</p>
-            <p className="text-xs text-indigo-500 dark:text-indigo-400">Documents will be parsed automatically</p>
+            <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Drop PDF or DOCX Resume here</p>
+            <p className="text-xs text-blue-500 dark:text-blue-400">Documents will be parsed automatically</p>
           </div>
         )}
 
@@ -108,7 +112,7 @@ function ResumeDropzone({
         {uploading && (
           <div className="absolute inset-0 bg-gray-50/70 dark:bg-gray-900/70 rounded-lg flex flex-col items-center justify-center gap-2 z-10">
             <div className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700">
-              <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
+              <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
               <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Extracting document text...</span>
             </div>
           </div>

@@ -97,10 +97,18 @@ export default function FresherAuditPanel({ audit }) {
       )}
 
       {/* 3. Sub-Pillar Navigation Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 gap-2 overflow-x-auto pb-1 text-xs font-bold">
+      <div 
+        role="tablist" 
+        aria-label="Fresher Audit Pillars"
+        className="flex border-b border-gray-200 dark:border-gray-700 gap-2 overflow-x-auto pb-1 text-xs font-bold"
+      >
         <button
+          role="tab"
+          id="tab-overview"
+          aria-selected={activeTab === 'overview'}
+          aria-controls="panel-overview"
           onClick={() => setActiveTab('overview')}
-          className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
+          className={`py-2 px-3 min-h-[38px] rounded-lg transition whitespace-nowrap ${
             activeTab === 'overview'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
@@ -109,8 +117,12 @@ export default function FresherAuditPanel({ audit }) {
           📊 4-Pillar Scores
         </button>
         <button
+          role="tab"
+          id="tab-projects"
+          aria-selected={activeTab === 'projects'}
+          aria-controls="panel-projects"
           onClick={() => setActiveTab('projects')}
-          className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+          className={`py-2 px-3 min-h-[38px] rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'projects'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
@@ -119,8 +131,12 @@ export default function FresherAuditPanel({ audit }) {
           <span>🛠️</span> Project Quality ({projectQuality.score}%)
         </button>
         <button
+          role="tab"
+          id="tab-verbs"
+          aria-selected={activeTab === 'verbs'}
+          aria-controls="panel-verbs"
           onClick={() => setActiveTab('verbs')}
-          className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+          className={`py-2 px-3 min-h-[38px] rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'verbs'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
@@ -129,8 +145,12 @@ export default function FresherAuditPanel({ audit }) {
           <span>⚡</span> Action Verbs ({actionVerbs.score}%)
         </button>
         <button
+          role="tab"
+          id="tab-links"
+          aria-selected={activeTab === 'links'}
+          aria-controls="panel-links"
           onClick={() => setActiveTab('links')}
-          className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+          className={`py-2 px-3 min-h-[38px] rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'links'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
@@ -139,8 +159,12 @@ export default function FresherAuditPanel({ audit }) {
           <span>🔗</span> Links & Sections ({linksSections.score}%)
         </button>
         <button
+          role="tab"
+          id="tab-layout"
+          aria-selected={activeTab === 'layout'}
+          aria-controls="panel-layout"
           onClick={() => setActiveTab('layout')}
-          className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+          className={`py-2 px-3 min-h-[38px] rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'layout'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'

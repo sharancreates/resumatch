@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const TEMPLATES = [
@@ -17,8 +17,8 @@ const TEMPLATES = [
     tag: "Frontend, Web & Startups",
     description: "Clean sans-serif design with subtle horizontal dividers. Ideal for web, frontend, and high-growth startup roles.",
     badge: "Clean Design",
-    borderActive: "border-cyan-500 ring-2 ring-cyan-500/30",
-    badgeColor: "bg-cyan-900/60 text-cyan-300 border-cyan-500/30"
+    borderActive: "border-sky-500 ring-2 ring-sky-500/30",
+    badgeColor: "bg-sky-900/60 text-sky-300 border-sky-500/30"
   },
   {
     id: "data_analytics",
@@ -35,8 +35,8 @@ const TEMPLATES = [
     tag: "IIT / NIT / University Drives",
     description: "Strict single-page university hierarchy with academic credentials and CGPA/marks placed prominently first.",
     badge: "Placement Cell Safe",
-    borderActive: "border-purple-500 ring-2 ring-purple-500/30",
-    badgeColor: "bg-purple-900/60 text-purple-300 border-purple-500/30"
+    borderActive: "border-emerald-500 ring-2 ring-emerald-500/30",
+    badgeColor: "bg-emerald-900/60 text-emerald-300 border-emerald-500/30"
   }
 ];
 
@@ -55,6 +55,17 @@ export default function ExportResumeModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -129,26 +140,32 @@ export default function ExportResumeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-modal-title"
+    >
       <div 
-        className="relative w-full max-w-3xl bg-[#0F172A] border border-indigo-500/30 rounded-3xl p-6 shadow-2xl text-white space-y-6 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-3xl bg-[#0D131F] border border-white/[0.08] rounded-3xl p-6 shadow-2xl text-white space-y-6 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button 
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white flex items-center justify-center transition"
-          aria-label="Close"
+          className="absolute top-4 right-4 min-w-[44px] min-h-[44px] rounded-full text-gray-400 hover:text-white flex items-center justify-center transition"
+          aria-label="Close dialog"
         >
           ✕
         </button>
 
         {/* Modal Header */}
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase tracking-wider">
             <span>📄</span> Fresher ATS Templates
           </div>
-          <h3 className="text-xl font-black text-white tracking-tight">
+          <h3 id="export-modal-title" className="text-xl font-black text-white tracking-tight">
             Export ATS-Compliant Fresher Resume
           </h3>
           <p className="text-xs text-gray-400">
@@ -157,7 +174,7 @@ export default function ExportResumeModal({
         </div>
 
         {/* Format Selector: PDF vs DOCX */}
-        <div className="bg-[#1E293B]/70 p-4 rounded-2xl border border-gray-800 space-y-3">
+        <div className="bg-[#090D15] p-4 rounded-2xl border border-white/[0.08] space-y-3">
           <label className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
             <span>💾</span> Step 1: Select Format
           </label>
@@ -165,17 +182,17 @@ export default function ExportResumeModal({
             <button
               type="button"
               onClick={() => setSelectedFormat('pdf')}
-              className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 ${
+              className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 min-h-[44px] ${
                 selectedFormat === 'pdf'
-                  ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/30 text-white'
-                  : 'bg-gray-900/60 border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-200'
+                  ? 'bg-blue-600/20 border-blue-500 ring-2 ring-blue-500/30 text-white'
+                  : 'bg-[#080B11] border-white/[0.06] text-gray-400 hover:border-white/[0.15] hover:text-gray-200'
               }`}
             >
               <span className="text-2xl">📄</span>
               <div className="space-y-0.5">
                 <div className="text-sm font-bold text-white flex items-center gap-2">
                   ATS-Safe PDF
-                  {selectedFormat === 'pdf' && <span className="text-indigo-400 text-xs">● Selected</span>}
+                  {selectedFormat === 'pdf' && <span className="text-blue-400 text-xs">● Selected</span>}
                 </div>
                 <div className="text-[11px] text-gray-400 leading-tight">
                   Strict 1-page layout. Best for online portals, LinkedIn, and emailing HR directly.
@@ -186,17 +203,17 @@ export default function ExportResumeModal({
             <button
               type="button"
               onClick={() => setSelectedFormat('docx')}
-              className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 ${
+              className={`p-3.5 rounded-xl border text-left transition flex items-start gap-3 min-h-[44px] ${
                 selectedFormat === 'docx'
-                  ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/30 text-white'
-                  : 'bg-gray-900/60 border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-200'
+                  ? 'bg-blue-600/20 border-blue-500 ring-2 ring-blue-500/30 text-white'
+                  : 'bg-[#080B11] border-white/[0.06] text-gray-400 hover:border-white/[0.15] hover:text-gray-200'
               }`}
             >
               <span className="text-2xl">📝</span>
               <div className="space-y-0.5">
                 <div className="text-sm font-bold text-white flex items-center gap-2">
                   Editable Word (DOCX)
-                  {selectedFormat === 'docx' && <span className="text-indigo-400 text-xs">● Selected</span>}
+                  {selectedFormat === 'docx' && <span className="text-blue-400 text-xs">● Selected</span>}
                 </div>
                 <div className="text-[11px] text-gray-400 leading-tight">
                   Clean native headings & bullets. Required by college placement cells & campus portals.
@@ -220,8 +237,8 @@ export default function ExportResumeModal({
                   onClick={() => setSelectedTemplate(tmpl.id)}
                   className={`p-4 rounded-2xl border text-left cursor-pointer transition relative flex flex-col justify-between ${
                     isSelected
-                      ? `bg-indigo-950/40 ${tmpl.borderActive} text-white`
-                      : 'bg-gray-900/50 border-gray-800 hover:border-gray-700 text-gray-300'
+                      ? `bg-blue-950/30 ${tmpl.borderActive} text-white`
+                      : 'bg-[#090D15] border-white/[0.06] hover:border-white/[0.15] text-gray-300'
                   }`}
                 >
                   <div className="space-y-2">
@@ -233,16 +250,16 @@ export default function ExportResumeModal({
                         {tmpl.badge}
                       </span>
                     </div>
-                    <div className="text-[10px] font-semibold text-indigo-300 uppercase tracking-wide">
+                    <div className="text-[10px] font-semibold text-blue-300 uppercase tracking-wide">
                       {tmpl.tag}
                     </div>
                     <p className="text-xs text-gray-400 leading-relaxed">
                       {tmpl.description}
                     </p>
                   </div>
-                  <div className="pt-3 mt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
+                  <div className="pt-3 mt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px]">
                     <span className="text-gray-500 font-mono">1 Page • ATS Compliant</span>
-                    <span className={isSelected ? 'text-indigo-400 font-bold' : 'text-gray-600'}>
+                    <span className={isSelected ? 'text-blue-400 font-bold' : 'text-gray-600'}>
                       {isSelected ? '✓ Selected' : 'Click to select'}
                     </span>
                   </div>
@@ -254,7 +271,7 @@ export default function ExportResumeModal({
 
         {/* Status Messages */}
         {error && (
-          <div className="p-3 bg-red-950/50 border border-red-500/50 rounded-xl text-red-200 text-xs">
+          <div className="p-3 bg-rose-950/50 border border-rose-500/50 rounded-xl text-rose-200 text-xs">
             {error}
           </div>
         )}
@@ -270,7 +287,7 @@ export default function ExportResumeModal({
             <button
               type="button"
               onClick={onDownloadReport}
-              className="py-3 px-4 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 text-xs font-bold transition flex items-center justify-center gap-2 border border-gray-700"
+              className="py-3 px-4 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 text-xs font-bold transition flex items-center justify-center gap-2 border border-gray-700 min-h-[44px]"
             >
               <span>📊</span> Download Match Report
             </button>
@@ -280,7 +297,7 @@ export default function ExportResumeModal({
             type="button"
             onClick={handleExport}
             disabled={loading}
-            className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 disabled:opacity-50"
+            className="flex-1 py-3 px-5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-blue-600/30 disabled:opacity-50 min-h-[44px]"
           >
             {loading ? (
               <>
@@ -302,4 +319,3 @@ export default function ExportResumeModal({
     </div>
   );
 }
-

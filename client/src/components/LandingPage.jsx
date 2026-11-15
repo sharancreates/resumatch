@@ -117,7 +117,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
   };
 
   return (
-    <div className="bg-[#080B11] text-gray-100 min-h-screen overflow-x-hidden font-sans selection:bg-blue-600 selection:text-white">
+    <div className="bg-[#080B11] text-white min-h-screen overflow-x-hidden font-sans">
       
       {/* Precision Top Glow Effect */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[340px] bg-gradient-to-b from-blue-600/15 via-blue-900/5 to-transparent blur-[120px] pointer-events-none" />
@@ -169,7 +169,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
         {/* Main Category Headline */}
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.12] text-white max-w-4xl mx-auto">
           Upload your resume, paste a job. <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-teal-300">
+          <span className="text-blue-400">
             Get a better resume in 2 minutes.
           </span>
         </h1>
@@ -212,7 +212,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                 {/* 1. Resume Input Panel */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-gray-200">1. Your Resume</label>
+                    <label htmlFor="landing-resume-text" className="text-xs font-bold text-gray-200">1. Your Resume</label>
                     <label className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-semibold flex items-center gap-1 transition">
                       <span>📁 Upload PDF / DOCX</span>
                       <input 
@@ -229,6 +229,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                     </div>
                   )}
                   <textarea
+                    id="landing-resume-text"
                     rows={8}
                     value={resumeText}
                     onChange={(e) => setResumeText(e.target.value)}
@@ -239,8 +240,9 @@ export default function LandingPage({ onGetStarted, onLogin }) {
 
                 {/* 2. Target Job Description Panel */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-200">2. Target Job Description</label>
+                  <label htmlFor="landing-job-text" className="text-xs font-bold text-gray-200">2. Target Job Description</label>
                   <textarea
+                    id="landing-job-text"
                     rows={8}
                     value={jobText}
                     onChange={(e) => setJobText(e.target.value)}

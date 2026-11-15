@@ -15,6 +15,11 @@
     overflow-x: hidden;
   }
 
+  ::selection {
+    background-color: #2563EB;
+    color: #FFFFFF;
+  }
+
   /* Micro-interactions: buttons step on hover, press on click */
   button:not(:disabled) {
     transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -38,4 +43,21 @@
 
 .animate-fadeIn {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-fadeIn {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

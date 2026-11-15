@@ -522,23 +522,23 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-gray-800 dark:text-gray-100 font-sans transition-colors duration-200">
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-[#080B11] text-gray-800 dark:text-gray-100 font-sans transition-colors duration-200">
       
       {/* 1. SIDEBAR SHELL */}
-      <aside className="w-72 bg-white dark:bg-[#111827] border-r border-gray-100 dark:border-gray-800 p-6 flex flex-col justify-between shrink-0 shadow-sm">
+      <aside className="w-72 bg-white dark:bg-[#0D131F] border-r border-gray-100 dark:border-white/[0.08] p-6 flex flex-col justify-between shrink-0 shadow-sm">
         <div className="space-y-8">
           
           {/* Brand Header */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-indigo-500/20">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-blue-500/25">
               RM
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
-                ResuMatch <span className="text-indigo-600 dark:text-indigo-400 font-medium">SaaS</span>
+              <h1 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-1.5">
+                ResuMatch <span className="text-blue-500 dark:text-blue-400 font-semibold text-[10px] uppercase px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/40">Freshers</span>
               </h1>
               <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                <span className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'Online' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'Online' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                 API: {serverStatus}
               </span>
             </div>
@@ -546,8 +546,8 @@ function App() {
 
           {/* Org Selector Workspace */}
           {token && (
-            <div className="bg-gray-50 dark:bg-[#1F2937]/50 rounded-xl p-3 border border-gray-100 dark:border-gray-800">
-              <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Active Workspace</label>
+            <div className="bg-gray-50 dark:bg-[#090D15] rounded-xl p-3 border border-gray-100 dark:border-white/[0.08]">
+              <label htmlFor="active-workspace-select" className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Active Workspace</label>
               
               {showCreateOrg ? (
                 <form onSubmit={handleCreateOrg} className="space-y-2 mt-1">
@@ -556,7 +556,7 @@ function App() {
                     placeholder="Workspace Name"
                     value={orgNameInput}
                     onChange={(e) => setOrgNameInput(e.target.value)}
-                    className="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#080B11] outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <div className="flex gap-2 justify-end">
                     <button 
@@ -568,7 +568,7 @@ function App() {
                     </button>
                     <button 
                       type="submit" 
-                      className="text-[10px] bg-indigo-600 text-white font-bold px-2 py-1 rounded-md"
+                      className="text-[10px] bg-blue-600 text-white font-bold px-2 py-1 rounded-md shadow-sm"
                     >
                       Save
                     </button>
@@ -577,6 +577,7 @@ function App() {
               ) : (
                 <div className="flex items-center justify-between gap-1 mt-1">
                   <select 
+                    id="active-workspace-select"
                     value={activeOrg?.id || ''} 
                     onChange={(e) => {
                       const selected = orgs.find(o => o.id === e.target.value);
@@ -585,14 +586,15 @@ function App() {
                     className="bg-transparent text-xs font-bold outline-none cursor-pointer text-gray-700 dark:text-gray-200 max-w-[150px] truncate"
                   >
                     {orgs.map(org => (
-                      <option key={org.id} value={org.id} className="dark:bg-[#111827]">
+                      <option key={org.id} value={org.id} className="dark:bg-[#0D131F]">
                         {org.name}
                       </option>
                     ))}
                   </select>
                   <button 
+                    type="button"
                     onClick={() => setShowCreateOrg(true)}
-                    className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     + New
                   </button>
@@ -604,11 +606,12 @@ function App() {
           {/* Nav List */}
           <nav className="space-y-1">
             <button 
+              type="button"
               onClick={() => setActiveTab('dashboard')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all min-h-[44px]
                 ${activeTab === 'dashboard' 
-                  ? 'bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-blue-50/70 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white'
                 }
               `}
             >
@@ -616,11 +619,12 @@ function App() {
               Dashboard
             </button>
             <button 
+              type="button"
               onClick={() => setActiveTab('scanner')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all min-h-[44px]
                 ${activeTab === 'scanner' 
-                  ? 'bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-blue-50/70 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white'
                 }
               `}
             >
@@ -628,38 +632,41 @@ function App() {
               ATS Match Scanner
             </button>
             <button 
+              type="button"
               onClick={() => {
                 if (!token) { setAuthModalOpen(true); return; }
                 setActiveTab('team');
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all min-h-[44px]
                 ${activeTab === 'team' 
-                  ? 'bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-blue-50/70 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white'
                 }
               `}
             >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              Team Management
+              Placement Team
             </button>
             <button 
+              type="button"
               onClick={() => {
                 if (!token) { setAuthModalOpen(true); return; }
                 setActiveTab('apikeys');
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all min-h-[44px]
                 ${activeTab === 'apikeys' 
-                  ? 'bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-blue-50/70 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white'
                 }
               `}
             >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-              Developer API
+              Developer & Campus API
             </button>
             <button 
+              type="button"
               onClick={() => handleUpgrade('referral')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 min-h-[44px]"
             >
               <span className="text-sm">🎁</span>
               Refer & Earn Free Days
@@ -668,25 +675,26 @@ function App() {
         </div>
 
         {/* Sidebar Footer Details */}
-        <div className="space-y-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+        <div className="space-y-4 pt-6 border-t border-gray-100 dark:border-white/[0.08]">
           
           {/* Active Quota progress */}
           {token && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase">
                 <span>Usage Limit</span>
-                <span>{currentScans} / {scanLimit} Scans</span>
+                <span className="font-mono">{currentScans} / {scanLimit} Scans</span>
               </div>
-              <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-gray-100 dark:bg-[#080B11] h-2 rounded-full overflow-hidden">
                 <div 
-                  className="bg-indigo-600 h-full rounded-full transition-all" 
+                  className="bg-blue-600 h-full rounded-full transition-all" 
                   style={{ width: `${percentageQuota}%` }}
                 ></div>
               </div>
               {!isPremium && (
                 <button 
+                  type="button"
                   onClick={() => handleUpgrade('pricing')}
-                  className="w-full text-center text-[10px] font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 py-1.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/40 transition"
+                  className="w-full text-center text-[10px] font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 py-2 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/40 transition min-h-[38px]"
                 >
                   ⚡ Get Student Pass (₹199)
                 </button>
@@ -698,7 +706,7 @@ function App() {
           <div className="flex items-center justify-between gap-2">
             {token ? (
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
                   {userEmail[0].toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -706,8 +714,9 @@ function App() {
                     {userName || userEmail.split('@')[0]}
                   </p>
                   <button 
+                    type="button"
                     onClick={handleLogout}
-                    className="text-[10px] font-semibold text-gray-400 hover:text-red-500"
+                    className="text-[10px] font-semibold text-gray-400 hover:text-rose-500"
                   >
                     Logout
                   </button>
@@ -715,12 +724,13 @@ function App() {
               </div>
             ) : (
               <button 
+                type="button"
                 onClick={() => {
                   setIsRegister(false);
                   setAuthError('');
                   setAuthModalOpen(true);
                 }}
-                className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition"
+                className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 transition min-h-[44px]"
               >
                 Sign In / Register
               </button>
@@ -728,9 +738,11 @@ function App() {
 
             {/* Dark mode */}
             <button 
+              type="button"
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition shrink-0"
+              className="min-w-[40px] min-h-[40px] rounded-lg bg-gray-100 dark:bg-[#080B11] text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/[0.06] transition shrink-0 flex items-center justify-center border border-transparent dark:border-white/[0.08]"
               title="Toggle Dark Mode"
+              aria-label="Toggle Dark Mode"
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
@@ -763,9 +775,9 @@ function App() {
               <div className="bg-white dark:bg-[#111827] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Total Scans Run</span>
-                  <p className="text-3xl font-black text-gray-950 dark:text-white">{currentScans}</p>
+                  <p className="text-3xl font-black text-gray-950 dark:text-white font-mono">{currentScans}</p>
                 </div>
-                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center font-bold text-xl">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold text-xl">
                   📊
                 </div>
               </div>
@@ -774,9 +786,9 @@ function App() {
               <div className="bg-white dark:bg-[#111827] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Average ATS Score</span>
-                  <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{avgScore}%</p>
+                  <p className="text-3xl font-black text-blue-600 dark:text-blue-400 font-mono">{avgScore}%</p>
                 </div>
-                <div className="w-12 h-12 bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center font-bold text-xl">
+                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center font-bold text-xl">
                   🎯
                 </div>
               </div>
@@ -784,13 +796,13 @@ function App() {
               {/* Card 3: Subscription Tier */}
               <div className="bg-white dark:bg-[#111827] p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Plan Subscription</span>
-                  <p className="text-2xl font-black text-amber-500 uppercase tracking-tight flex items-center gap-1.5">
-                    {isPremium ? "💎 PRO TIER" : "🎁 FREE TIER"}
+                  <span className="text-[11px] text-gray-400 uppercase font-bold tracking-wider">Placement Pass Status</span>
+                  <p className="text-xl font-black text-amber-500 uppercase tracking-tight flex items-center gap-1.5">
+                    {isPremium ? "🎓 SPRINT PASS ACTIVE" : "🎁 FREE TIER (3 SCANS)"}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center font-bold text-xl">
-                  👑
+                  ⚡
                 </div>
               </div>
 
@@ -808,14 +820,15 @@ function App() {
                 </div>
               ) : loadingHistory ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                 </div>
               ) : history.length === 0 ? (
                 <div className="text-center py-8 text-xs text-gray-400 space-y-2">
                   <p>No scans performed yet in this workspace.</p>
                   <button 
+                    type="button"
                     onClick={() => setActiveTab('scanner')}
-                    className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg transition"
+                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-lg transition"
                   >
                     Perform your first scan
                   </button>
@@ -842,10 +855,10 @@ function App() {
                           <td className="py-4">
                             <span className={`font-black text-sm px-2.5 py-1 rounded-lg
                               ${item.score >= 70 
-                                ? 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400' 
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' 
                                 : item.score >= 40 
-                                ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950/20 dark:text-yellow-400' 
-                                : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400'}
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400' 
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400'}
                             `}>
                               {item.score}%
                             </span>
@@ -862,14 +875,16 @@ function App() {
                           <td className="py-4 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-2 justify-end">
                               <button 
+                                type="button"
                                 onClick={() => handleSelectHistoryItem(item)}
-                                className="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-bold rounded-lg hover:bg-indigo-100 transition"
+                                className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-bold rounded-lg hover:bg-blue-100 transition"
                               >
                                 View
                               </button>
                               <button 
+                                type="button"
                                 onClick={(e) => handleDeleteHistory(item.id, e)}
-                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition"
+                                className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition"
                                 title="Delete Scan"
                               >
                                 🗑️
@@ -936,7 +951,7 @@ function App() {
                   onClick={handleAnalyze}
                   disabled={loading || serverStatus.includes("Offline")}
                   className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition transform active:scale-95
-                    ${loading ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/10 dark:bg-indigo-600 dark:hover:bg-indigo-500'}
+                    ${loading ? 'bg-blue-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/10 dark:bg-blue-600 dark:hover:bg-blue-500'}
                   `}
                 >
                   {loading ? (
@@ -1021,7 +1036,7 @@ function App() {
                       placeholder="coworker@company.com" 
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      className="w-full mt-1 p-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 dark:text-gray-200"
+                      className="w-full mt-1 p-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 dark:text-gray-200"
                     />
                   </div>
                   <div>
@@ -1038,7 +1053,7 @@ function App() {
                   </div>
                   <button 
                     type="submit"
-                    className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition"
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 transition"
                   >
                     Send Invitation
                   </button>
@@ -1053,7 +1068,7 @@ function App() {
 
                 {loadingMembers ? (
                   <div className="flex justify-center py-12">
-                    <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+                    <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                   </div>
                 ) : members.length === 0 ? (
                   <div className="text-center py-8 text-xs text-gray-400">
@@ -1081,7 +1096,7 @@ function App() {
                             </td>
                             <td className="py-4">
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
-                                ${m.role === 'OWNER' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' : m.role === 'ADMIN' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'}
+                                ${m.role === 'OWNER' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' : m.role === 'ADMIN' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'}
                               `}>
                                 {m.role}
                               </span>
@@ -1138,12 +1153,12 @@ function App() {
                       placeholder="e.g. Production Recruitment Pipeline" 
                       value={apiKeyName}
                       onChange={(e) => setApiKeyName(e.target.value)}
-                      className="w-full mt-1 p-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 dark:text-gray-200"
+                      className="w-full mt-1 p-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 dark:text-gray-200"
                     />
                   </div>
                   <button 
                     type="submit"
-                    className="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition animate-fade-in"
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 transition animate-fadeIn"
                   >
                     Generate Credentials
                   </button>
@@ -1159,8 +1174,9 @@ function App() {
                       {revealedKey}
                     </div>
                     <button 
+                      type="button"
                       onClick={() => setRevealedKey(null)}
-                      className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline block text-right w-full"
+                      className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline block text-right w-full"
                     >
                       I have saved this key
                     </button>
@@ -1176,7 +1192,7 @@ function App() {
 
                 {loadingKeys ? (
                   <div className="flex justify-center py-12">
-                    <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+                    <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                   </div>
                 ) : apiKeys.length === 0 ? (
                   <div className="text-center py-8 text-xs text-gray-400">

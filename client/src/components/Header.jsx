@@ -103,9 +103,11 @@ function Header({
 
         {/* DARK MODE TOGGLE BUTTON */}
         <button 
+          type="button"
           onClick={() => setDarkMode(!darkMode)}
-          className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition"
+          className="min-w-[44px] min-h-[44px] rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition flex items-center justify-center"
           title="Toggle Dark Mode"
+          aria-label="Toggle Dark Mode"
         >
           {darkMode ? '☀️' : '🌙'}
         </button>

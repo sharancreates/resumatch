@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ExportResumeModal from './ExportResumeModal';
 
@@ -19,6 +19,17 @@ export default function JobTailorModal({
   const [activeTab, setActiveTab] = useState('diff');
   const [copied, setCopied] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -55,26 +66,32 @@ export default function JobTailorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tailor-modal-title"
+    >
       <div 
-        className="relative w-full max-w-2xl bg-[#0F172A] border border-indigo-500/30 rounded-3xl p-6 shadow-2xl text-white space-y-6 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-2xl bg-[#0D131F] border border-white/[0.08] rounded-3xl p-6 shadow-2xl text-white space-y-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button 
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white flex items-center justify-center transition"
-          aria-label="Close"
+          className="absolute top-4 right-4 min-w-[44px] min-h-[44px] rounded-full text-gray-400 hover:text-white flex items-center justify-center transition"
+          aria-label="Close dialog"
         >
           ✕
         </button>
 
         {/* Header */}
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/60 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase tracking-wider">
             <span>🎯</span> 1-Click Job Tailoring
           </div>
-          <h3 className="text-xl font-black text-white tracking-tight">
+          <h3 id="tailor-modal-title" className="text-xl font-black text-white tracking-tight">
             Tailor Resume to Target Job
           </h3>
           <p className="text-xs text-gray-400">
@@ -84,19 +101,20 @@ export default function JobTailorModal({
 
         {/* Locked for Free Users Banner */}
         {!isPremium && (
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-gray-900 border border-amber-500/40 space-y-3">
+          <div className="p-5 rounded-2xl bg-[#090D15] border border-amber-500/30 space-y-3">
             <div className="flex items-center gap-2 text-amber-300 text-xs font-bold uppercase">
-              <span>💎</span> Student Premium Feature
+              <span>💎</span> Student Placement Feature
             </div>
             <p className="text-xs text-gray-300 leading-relaxed">
               1-Click Job Tailoring and resume versioning are available on the student <strong className="text-white">Sprint Pass (₹199 / 14 days)</strong> or <strong className="text-white">Placement Season Pass (₹499)</strong>.
             </p>
             <button
+              type="button"
               onClick={() => {
                 if (handleUpgrade) handleUpgrade();
                 onClose();
               }}
-              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-orange-500/20"
+              className="px-4 py-2.5 min-h-[44px] bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-amber-600/20"
             >
               ⚡ Upgrade to Sprint Pass (₹199)
             </button>
@@ -112,12 +130,12 @@ export default function JobTailorModal({
         {/* Tailor Execution Overview */}
         {isPremium && !tailoredData && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-gray-900/60 border border-gray-800 space-y-2 text-xs">
+            <div className="p-4 rounded-xl bg-[#090D15] border border-white/[0.08] space-y-2 text-xs">
               <span className="font-bold text-gray-300">Target Keywords Being Weaved In:</span>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {missingKeywords.length > 0 ? (
                   missingKeywords.slice(0, 5).map((kw, idx) => (
-                    <span key={idx} className="px-2 py-0.5 rounded bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-[11px] font-mono">
+                    <span key={idx} className="px-2.5 py-1 rounded bg-blue-950/60 border border-blue-500/30 text-blue-300 text-[11px] font-mono">
                       + {kw}
                     </span>
                   ))
@@ -128,12 +146,13 @@ export default function JobTailorModal({
             </div>
 
             <button
+              type="button"
               onClick={handleTailor}
               disabled={loading}
-              className={`w-full py-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+              className={`w-full py-3.5 min-h-[44px] rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
                 loading 
-                  ? 'bg-indigo-500 cursor-wait' 
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                  ? 'bg-blue-600/70 cursor-wait' 
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/25'
               }`}
             >
               {loading ? (
@@ -162,16 +181,18 @@ export default function JobTailorModal({
             </div>
 
             {/* View Mode Switcher */}
-            <div className="flex border-b border-gray-800 gap-3 text-xs font-bold">
+            <div className="flex border-b border-white/[0.08] gap-3 text-xs font-bold">
               <button
+                type="button"
                 onClick={() => setActiveTab('diff')}
-                className={`pb-2 transition ${activeTab === 'diff' ? 'border-b-2 border-indigo-500 text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                className={`pb-2 transition ${activeTab === 'diff' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400 hover:text-gray-200'}`}
               >
                 🔍 Changes Summary ({tailoredData.changes_summary?.length || 0})
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('full')}
-                className={`pb-2 transition ${activeTab === 'full' ? 'border-b-2 border-indigo-500 text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                className={`pb-2 transition ${activeTab === 'full' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400 hover:text-gray-200'}`}
               >
                 📄 Full Tailored Resume
               </button>
@@ -181,11 +202,11 @@ export default function JobTailorModal({
             {activeTab === 'diff' && (
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                 {tailoredData.changes_summary?.map((change, idx) => (
-                  <div key={idx} className="p-3.5 rounded-xl bg-gray-900/60 border border-gray-800 space-y-2 text-xs">
+                  <div key={idx} className="p-3.5 rounded-xl bg-[#090D15] border border-white/[0.08] space-y-2 text-xs">
                     <div className="text-[10px] font-bold text-gray-500 uppercase flex items-center justify-between">
                       <span>Bullet #{idx + 1}</span>
                       {change.keyword_added && (
-                        <span className="text-indigo-400 font-mono">
+                        <span className="text-blue-400 font-mono">
                           +{change.keyword_added} integrated
                         </span>
                       )}
@@ -203,7 +224,7 @@ export default function JobTailorModal({
 
             {/* Full Tailored Resume Text */}
             {activeTab === 'full' && (
-              <div className="p-4 rounded-xl bg-[#0B0F19] border border-gray-800 text-[11px] text-gray-300 font-mono max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+              <div className="p-4 rounded-xl bg-[#080B11] border border-white/[0.08] text-[11px] text-gray-300 font-mono max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed">
                 {tailoredData.tailored_text}
               </div>
             )}
@@ -211,20 +232,23 @@ export default function JobTailorModal({
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <button
+                type="button"
                 onClick={handleCopyTailored}
-                className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-gray-700"
+                className="flex-1 py-3 min-h-[44px] bg-[#090D15] hover:bg-white/[0.06] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-white/[0.08]"
               >
                 <span>{copied ? '✓' : '📋'}</span> {copied ? 'Copied Tailored Resume!' : 'Copy Tailored Text'}
               </button>
               <button
+                type="button"
                 onClick={() => setExportModalOpen(true)}
-                className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20"
+                className="flex-1 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25"
               >
                 <span>📄</span> Export Resume
               </button>
               <button
+                type="button"
                 onClick={onClose}
-                className="py-2.5 px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition border border-gray-700"
+                className="py-3 px-5 min-h-[44px] bg-[#090D15] hover:bg-white/[0.06] text-gray-300 rounded-xl text-xs font-bold transition border border-white/[0.08]"
               >
                 Done
               </button>
@@ -246,4 +270,3 @@ export default function JobTailorModal({
     </div>
   );
 }
-

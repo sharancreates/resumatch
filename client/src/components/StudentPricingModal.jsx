@@ -85,6 +85,17 @@ export default function StudentPricingModal({
   }, [initialTab, isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
     if (!isOpen || !token) return;
 
     const fetchReferralStats = async () => {
@@ -221,16 +232,22 @@ export default function StudentPricingModal({
   const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pricing-modal-title"
+    >
       <div 
         className="relative w-full max-w-4xl bg-[#0D131F] border border-white/[0.08] rounded-2xl p-6 md:p-8 shadow-2xl text-white space-y-6 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button 
+          type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white flex items-center justify-center transition"
-          aria-label="Close"
+          className="absolute top-4 right-4 min-w-[44px] min-h-[44px] rounded-full text-gray-400 hover:text-white flex items-center justify-center transition"
+          aria-label="Close dialog"
         >
           ✕
         </button>
@@ -240,7 +257,7 @@ export default function StudentPricingModal({
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/70 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider">
             <span>🎓</span> Student Micro-Pricing • No Recurring Traps
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+          <h2 id="pricing-modal-title" className="text-2xl md:text-3xl font-black text-white tracking-tight">
             Built for Freshers. Priced for Students.
           </h2>
           <p className="text-xs md:text-sm text-gray-400">
