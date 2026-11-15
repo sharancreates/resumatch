@@ -34,3 +34,4 @@ Implemented the frontend resume export interface (`ExportResumeModal.jsx`) allow
 - `npm run lint` in `client`: Passed with 0 errors and 0 warnings.
 - `npm run build` in `client`: Production build completed successfully in 18.93s.
 - All 19 backend tests passed in 4.28s.
+

@@ -24,3 +24,4 @@
 ## Sign-off
 - All Phase 9 deliverables verified and accepted.
 - ResuMatch now enables freshers and students to export tailored resumes in 4 ATS-safe templates across both PDF and editable Word formats.
+
