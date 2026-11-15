@@ -13,8 +13,12 @@ function Header({
   darkMode,
   setDarkMode,
   isPremium,
-  handleUpgrade
+  handleUpgrade,
+  onOpenPricing,
+  onOpenReferral
 }) {
+  const triggerPricing = onOpenPricing || handleUpgrade;
+
   return (
     <header className="flex justify-between items-center mb-8">
       <div>
@@ -22,7 +26,7 @@ function Header({
           ResuMatch <span className="text-indigo-400 dark:text-indigo-200">AI</span>
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Hybrid Logic: Keywords + Semantic Meaning
+          The AI Resume Copilot Built for Freshers & Students
         </p>
       </div>
 
@@ -36,18 +40,31 @@ function Header({
           Server: {serverStatus}
         </div>
 
-        {/* Premium Upgrade Actions */}
+        {/* Viral Referral Badge */}
+        {token && onOpenReferral && (
+          <button
+            onClick={onOpenReferral}
+            className="text-xs hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/50 transition font-bold"
+          >
+            <span>🎁</span> Free Days
+          </button>
+        )}
+
+        {/* Student Pass Upgrade Actions */}
         {token && (
           isPremium ? (
-            <span className="text-xs font-bold px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full shadow-sm select-none flex items-center gap-1 animate-pulse">
-              💎 Premium
-            </span>
+            <button
+              onClick={triggerPricing}
+              className="text-xs font-bold px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full shadow-sm select-none flex items-center gap-1 hover:brightness-105 transition"
+            >
+              🎓 Student Pass Active
+            </button>
           ) : (
             <button 
-              onClick={handleUpgrade}
-              className="text-xs font-bold px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-full shadow hover:from-amber-600 hover:to-orange-700 transition transform hover:scale-105"
+              onClick={triggerPricing}
+              className="text-xs font-bold px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-full shadow hover:from-amber-600 hover:to-orange-700 transition transform hover:scale-105 flex items-center gap-1"
             >
-              ⚡ Upgrade
+              ⚡ Student Pass (₹199)
             </button>
           )
         )}

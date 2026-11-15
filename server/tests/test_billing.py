@@ -106,4 +106,4 @@ def test_billing_order_rbac_guard():
 
     res = create_billing_order(tenant=tenant_admin, db=None)
     assert res["status"] == "mock"
-    assert res["amount"] == PRO_PRICE_INR_PAISE
+    assert res["amount"] == 19900

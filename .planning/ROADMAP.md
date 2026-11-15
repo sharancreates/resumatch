@@ -51,7 +51,7 @@
 
 ---
 
-## Milestone 2: Fresher-Focused Product Pivot & Campus Launch [ACTIVE]
+## Milestone 2: Fresher-Focused Product Pivot & Campus Launch [COMPLETED]
 
 ### Phase 6: Student Landing Experience & Instant Free Scan [COMPLETED]
 **Goal**: Reposition brand around Indian freshers and offer a zero-friction, no-login scan engine with viral shareable scorecards.
@@ -83,9 +83,9 @@
 - [x] **Task 9.3**: Build `python-docx` export generator producing clean, ATS-compliant Word documents without formatting traps.
 - [x] **Task 9.4**: Connect client download modal supporting both PDF and DOCX exports for tailored resumes.
 
-### Phase 10: Student Micro-Pricing, UPI Razorpay & Viral Referrals
+### Phase 10: Student Micro-Pricing, UPI Razorpay & Viral Referrals [COMPLETED]
 **Goal**: Replace recurring monthly subscriptions with student-friendly micro-passes and viral referral mechanics.
-- [ ] **Task 10.1**: Update database schemas for student passes: Sprint Pass (₹199 / 14 days), Placement Season (₹499 / 3 months), and Campus Bulk Licenses.
-- [ ] **Task 10.2**: Implement Razorpay UPI Intent & QR payment integration for friction-free mobile student checkout.
-- [ ] **Task 10.3**: Implement student referral engine ("Invite 3 friends -> unlock 7 days free Sprint Pass") with referral codes and activation webhooks.
-- [ ] **Task 10.4**: Hide enterprise multi-tenant workspaces and API keys from student onboarding to keep UX simple and focused.
+- [x] **Task 10.1**: Update database schemas for student passes: Sprint Pass (₹199 / 14 days), Placement Season (₹499 / 3 months), and Campus Bulk Licenses.
+- [x] **Task 10.2**: Implement Razorpay UPI Intent & QR payment integration for friction-free mobile student checkout.
+- [x] **Task 10.3**: Implement student referral engine ("Invite 3 friends -> unlock 7 days free Sprint Pass") with referral codes and activation webhooks.
+- [x] **Task 10.4**: Hide enterprise multi-tenant workspaces and API keys from student onboarding to keep UX simple and focused.

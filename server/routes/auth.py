@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 
-from models import User, Organization, Membership, Subscription
+from models import User, Organization, Membership, Subscription, Referral
 from utils.db import get_db
 from utils.auth_helper import (
     hash_password, 
@@ -14,6 +14,7 @@ from utils.auth_helper import (
     get_current_user
 )
 from utils.limiter import limiter
+from routes.referral import generate_unique_referral_code, process_referral_reward
 
 auth_router = APIRouter(prefix="/api", tags=["authentication"])
 
@@ -22,6 +23,7 @@ EMAIL_REGEX = r'^[\w\.-]+@[\w\.-]+\.\w+$'
 class RegisterRequest(BaseModel):
     email: str
     password: str
+    referred_by_code: str | None = None
 
 class LoginRequest(BaseModel):
     email: str
@@ -57,13 +59,30 @@ def register(request: Request, req: RegisterRequest, db: Session = Depends(get_d
         # Create User
         user_id = str(uuid.uuid4())
         hashed_pwd = hash_password(password)
+        ref_code = generate_unique_referral_code(db)
         new_user = User(
             id=user_id, 
             email=email, 
             password_hash=hashed_pwd,
+            referral_code=ref_code,
             email_verified=True # Auto verify for simplicity
         )
         db.add(new_user)
+        
+        # Handle referral attribution if referred_by_code provided
+        if req.referred_by_code and req.referred_by_code.strip():
+            ref_clean = req.referred_by_code.strip().upper()
+            referrer = db.query(User).filter(User.referral_code == ref_clean).first()
+            if referrer and referrer.id != user_id:
+                referral_entry = Referral(
+                    id=str(uuid.uuid4()),
+                    referrer_user_id=referrer.id,
+                    referred_user_id=user_id,
+                    status="joined",
+                    reward_granted=False,
+                    created_at=datetime.now(timezone.utc)
+                )
+                db.add(referral_entry)
         
         # Create Default Personal Organization
         org_id = str(uuid.uuid4())
@@ -98,6 +117,13 @@ def register(request: Request, req: RegisterRequest, db: Session = Depends(get_d
 
         db.commit()
 
+        # Check if referrer has reached reward milestone (e.g. 3 friends)
+        if req.referred_by_code and req.referred_by_code.strip():
+            ref_clean = req.referred_by_code.strip().upper()
+            referrer = db.query(User).filter(User.referral_code == ref_clean).first()
+            if referrer and referrer.id != user_id:
+                process_referral_reward(referrer.id, db)
+
         # Generate JWT token
         token = encode_auth_token(new_user.id)
         
@@ -106,6 +132,7 @@ def register(request: Request, req: RegisterRequest, db: Session = Depends(get_d
             "message": "User registered successfully.",
             "token": token,
             "email": new_user.email,
+            "referral_code": new_user.referral_code,
             "is_premium": False
         }
 

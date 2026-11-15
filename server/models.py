@@ -20,6 +20,7 @@ class User(Base):
     verification_token = Column(String(100), nullable=True)
     reset_token = Column(String(100), nullable=True)
     reset_token_expiry = Column(DateTime, nullable=True)
+    referral_code = Column(String(32), unique=True, index=True, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -28,16 +29,23 @@ class User(Base):
     resumes = relationship('Resume', back_populates='user', cascade='all, delete-orphan')
     api_keys = relationship('ApiKey', back_populates='user', cascade='all, delete-orphan')
     usage_logs = relationship('UsageLog', back_populates='user', cascade='all, delete-orphan')
+    referrals_made = relationship('Referral', foreign_keys='Referral.referrer_user_id', back_populates='referrer', cascade='all, delete-orphan')
+    referral_received = relationship('Referral', foreign_keys='Referral.referred_user_id', back_populates='referred', uselist=False, cascade='all, delete-orphan')
 
     @property
     def is_premium(self):
-        # Premium if they have memberships in an org with a PRO/TEAM plan
-        # For simplicity, we can also check if they have a direct premium flag
-        # Or look up their active organization subscriptions.
-        # Let's check direct flag or active memberships.
+        # Premium if they have memberships in an org with an active PRO, TEAM, SPRINT_PASS, or PLACEMENT_SEASON plan
+        now = datetime.now(timezone.utc)
         for membership in self.memberships:
-            if membership.organization.subscription and membership.organization.subscription.plan in ['PRO', 'TEAM']:
-                return True
+            sub = membership.organization.subscription
+            if sub and sub.plan in ['PRO', 'TEAM', 'SPRINT_PASS', 'PLACEMENT_SEASON'] and sub.status == 'active':
+                if sub.current_period_end is None:
+                    return True
+                sub_end = sub.current_period_end
+                if sub_end.tzinfo is None:
+                    sub_end = sub_end.replace(tzinfo=timezone.utc)
+                if sub_end > now:
+                    return True
         return False
 
     def to_dict(self):
@@ -48,10 +56,25 @@ class User(Base):
             "linkedin_url": self.linkedin_url,
             "industry": self.industry,
             "job_title": self.job_title,
+            "referral_code": self.referral_code,
             "is_premium": self.is_premium,
             "email_verified": self.email_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
+
+class Referral(Base):
+    __tablename__ = 'referrals'
+
+    id = Column(String(36), primary_key=True)
+    referrer_user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), index=True, nullable=False)
+    referred_user_id = Column(String(36), ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    status = Column(String(20), default='joined')  # 'joined', 'rewarded'
+    reward_granted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    referrer = relationship('User', foreign_keys=[referrer_user_id], back_populates='referrals_made')
+    referred = relationship('User', foreign_keys=[referred_user_id], back_populates='referral_received')
 
 class Organization(Base):
     __tablename__ = 'organizations'
@@ -211,8 +234,8 @@ class Subscription(Base):
     status = Column(String(50), nullable=False) # active, past_due, canceled, trialing
     trial_start = Column(DateTime, nullable=True)
     trial_end = Column(DateTime, nullable=True)
-    current_period_start = Column(DateTime, nullable=False)
-    current_period_end = Column(DateTime, nullable=False)
+    current_period_start = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    current_period_end = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     cancel_at_period_end = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

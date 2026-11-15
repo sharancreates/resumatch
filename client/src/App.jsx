@@ -5,6 +5,7 @@ import ResumeDropzone from './components/ResumeDropzone';
 import JobTextArea from './components/JobTextArea';
 import ResultDisplay from './components/ResultDisplay';
 import LandingPage from './components/LandingPage';
+import StudentPricingModal from './components/StudentPricingModal';
 
 const API_URL = import.meta.env.VITE_API_URL || ""; 
 
@@ -29,6 +30,10 @@ function App() {
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
+
+  // Student Pricing & Viral Referral State
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [pricingModalTab, setPricingModalTab] = useState('pricing');
   
   // Multi-Tenant Workspaces / Organizations
   const [orgs, setOrgs] = useState([]);
@@ -170,18 +175,32 @@ function App() {
   // Sync isPremium if workspace subscription changes
   useEffect(() => {
     if (activeOrg) {
-      setIsPremium(activeOrg.plan === 'PRO' || activeOrg.plan === 'TEAM');
+      setIsPremium(
+        activeOrg.plan === 'PRO' || 
+        activeOrg.plan === 'TEAM' || 
+        activeOrg.plan === 'SPRINT_PASS' || 
+        activeOrg.plan === 'PLACEMENT_SEASON'
+      );
     }
   }, [activeOrg]);
+
+  // Capture referral code from URL query parameter (?ref=CODE)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refParam = urlParams.get('ref');
+    if (refParam && /^[A-Za-z0-9_-]{3,32}$/.test(refParam)) {
+      localStorage.setItem('resumatch_referrer', refParam.toUpperCase());
+    }
+  }, []);
 
   // Check URL billing success redirection parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const upgradeStatus = urlParams.get('upgrade');
     if (upgradeStatus === 'success') {
-      alert("Upgrade completed successfully! Your active workspace subscription has been upgraded to Premium.");
+      alert("Upgrade completed successfully! Your active student pass has been activated.");
       window.history.replaceState({}, document.title, window.location.pathname);
-      // reload organization lists
+      setIsPremium(true);
       if (token) {
         axios.get(`${API_URL}/api/orgs`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -216,44 +235,14 @@ function App() {
     }
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = (tab = 'pricing') => {
     if (!token) {
+      setIsRegister(false);
       setAuthModalOpen(true);
       return;
     }
-    try {
-      const response = await axios.post(`${API_URL}/api/billing/checkout-session`, {}, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.data.status === "success") {
-        window.location.href = response.data.url;
-      } else if (response.data.status === "mock") {
-        const confirmMock = window.confirm("Stripe is not configured in this environment. Proceed with a Mock Upgrade to instantly grant Premium status?");
-        if (confirmMock) {
-          const mockUpgradeRes = await axios.post(`${API_URL}/api/billing/mock-upgrade`, {}, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (mockUpgradeRes.data.status === "success") {
-            setIsPremium(true);
-            alert("Congratulations! Your active workspace organization has been upgraded to Premium.");
-            // Refresh org lists
-            const responseOrgs = await axios.get(`${API_URL}/api/orgs`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const fetched = responseOrgs.data.data || [];
-            setOrgs(fetched);
-            if (activeOrg) {
-              const updated = fetched.find(o => o.id === activeOrg.id);
-              if (updated) setActiveOrg(updated);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Upgrade checkout error:", err);
-      alert("Failed to initiate billing session.");
-    }
+    setPricingModalTab(tab);
+    setPricingModalOpen(true);
   };
 
   const handleAnalyze = async () => {
@@ -453,10 +442,17 @@ function App() {
     }
     try {
       const endpoint = isRegister ? 'register' : 'login';
-      const response = await axios.post(`${API_URL}/api/auth/${endpoint}`, {
+      const payload = {
         email: emailInput,
         password: passwordInput
-      });
+      };
+      if (isRegister) {
+        const storedRef = localStorage.getItem('resumatch_referrer');
+        if (storedRef) {
+          payload.referred_by_code = storedRef;
+        }
+      }
+      const response = await axios.post(`${API_URL}/api/auth/${endpoint}`, payload);
 
       const { token: receivedToken, email: receivedEmail, is_premium: receivedIsPremium } = response.data;
       localStorage.setItem('token', receivedToken);
@@ -661,6 +657,13 @@ function App() {
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
               Developer API
             </button>
+            <button 
+              onClick={() => handleUpgrade('referral')}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20"
+            >
+              <span className="text-sm">🎁</span>
+              Refer & Earn Free Days
+            </button>
           </nav>
         </div>
 
@@ -682,10 +685,10 @@ function App() {
               </div>
               {!isPremium && (
                 <button 
-                  onClick={handleUpgrade}
+                  onClick={() => handleUpgrade('pricing')}
                   className="w-full text-center text-[10px] font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 py-1.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950/40 transition"
                 >
-                  ⚡ Upgrade to PRO
+                  ⚡ Get Student Pass (₹199)
                 </button>
               )}
             </div>
@@ -1242,6 +1245,23 @@ function App() {
         passwordInput={passwordInput}
         setPasswordInput={setPasswordInput}
         handleAuthSubmit={handleAuthSubmit}
+      />
+
+      {/* Student Micro-Pricing & Viral Referral Modal */}
+      <StudentPricingModal
+        isOpen={pricingModalOpen}
+        onClose={() => setPricingModalOpen(false)}
+        token={token}
+        userEmail={userEmail}
+        isPremium={isPremium}
+        initialTab={pricingModalTab}
+        onUpgradeSuccess={() => {
+          setIsPremium(true);
+          if (activeOrg) {
+            setActiveOrg({ ...activeOrg, plan: 'SPRINT_PASS' });
+          }
+        }}
+        API_URL={API_URL}
       />
     </div>
   );

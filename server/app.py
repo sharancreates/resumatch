@@ -11,6 +11,7 @@ from routes.billing import billing_router
 from routes.analyze import analyze_router
 from routes.teams import teams_router
 from routes.reports import reports_router
+from routes.referral import referral_router
 from utils.db import init_db
 from utils.limiter import limiter
 from slowapi.errors import RateLimitExceeded
@@ -43,6 +44,7 @@ app.include_router(billing_router)
 app.include_router(analyze_router)
 app.include_router(teams_router)
 app.include_router(reports_router)
+app.include_router(referral_router)
 
 # Initialize Database tables
 @app.on_event("startup")
