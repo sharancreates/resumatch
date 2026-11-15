@@ -7,8 +7,8 @@ import requests
 import threading
 from io import BytesIO
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request, Header
-from fastapi.responses import StreamingResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request, Header, Response
+from fastapi.responses import StreamingResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -962,6 +962,78 @@ def export_report_endpoint(analysis_id: str, user: User = Depends(get_current_us
     except Exception as e:
         logger.error(f"PDF Export Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate PDF report.")
+
+class ExportResumeRequest(BaseModel):
+    template_id: str = "classic_tech"
+    format: str = "pdf"
+    resume_text: str | None = None
+    analysis_id: str | None = None
+    resume_version_id: str | None = None
+
+@analyze_router.get('/resume/templates')
+def list_resume_templates():
+    from services.resume_templates import TEMPLATES_CATALOG
+    return {"templates": TEMPLATES_CATALOG}
+
+@analyze_router.post('/resume/export')
+async def export_resume_document(
+    payload: ExportResumeRequest,
+    db: Session = Depends(get_db)
+):
+    from services.resume_templates import (
+        TEMPLATES_CATALOG,
+        normalize_resume_data,
+        generate_resume_pdf,
+        generate_resume_docx,
+    )
+    
+    text_to_use = payload.resume_text
+    if not text_to_use and payload.resume_version_id:
+        rv = db.query(ResumeVersion).filter(ResumeVersion.id == payload.resume_version_id).first()
+        if rv and rv.resume_text:
+            text_to_use = rv.resume_text
+    if not text_to_use and payload.analysis_id:
+        analysis = db.query(Analysis).filter(Analysis.id == payload.analysis_id).first()
+        if analysis:
+            if analysis.resume_version_id:
+                rv = db.query(ResumeVersion).filter(ResumeVersion.id == analysis.resume_version_id).first()
+                if rv and rv.resume_text:
+                    text_to_use = rv.resume_text
+            if not text_to_use and analysis.resume_id:
+                rv = db.query(ResumeVersion).filter(ResumeVersion.resume_id == analysis.resume_id).order_by(ResumeVersion.version.desc()).first()
+                if rv and rv.resume_text:
+                    text_to_use = rv.resume_text
+
+    if not text_to_use or not text_to_use.strip():
+        raise HTTPException(status_code=400, detail="No resume content provided or found for export.")
+
+    template_ids = [t["id"] for t in TEMPLATES_CATALOG]
+    template_id = payload.template_id if payload.template_id in template_ids else "classic_tech"
+    export_format = payload.format.lower().strip() if payload.format else "pdf"
+
+    try:
+        resume_data = normalize_resume_data(text_to_use)
+        candidate_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', resume_data.get("candidate_name", "Resume")).strip('_') or "Resume"
+
+        if export_format == "docx":
+            file_bytes = await run_in_threadpool(generate_resume_docx, resume_data, template_id)
+            filename = f"{candidate_name}_{template_id}.docx"
+            return Response(
+                content=file_bytes,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+            )
+        else:
+            file_bytes = await run_in_threadpool(generate_resume_pdf, resume_data, template_id)
+            filename = f"{candidate_name}_{template_id}.pdf"
+            return Response(
+                content=file_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+            )
+    except Exception as e:
+        logger.error(f"Resume template export error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate resume export: {str(e)}")
 
 @analyze_router.get('/health')
 def health_check():

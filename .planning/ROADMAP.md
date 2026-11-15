@@ -76,12 +76,12 @@
 - [x] **Task 8.3**: Implement "Tailor to this Job": 1-click generation of tailored resume versions linked to target job descriptions.
 - [x] **Task 8.4**: Implement per-user and daily LLM quota enforcement to guarantee cost control and gross margin protection.
 
-### Phase 9: Fresher ATS Templates & Multi-Format Export
+### Phase 9: Fresher ATS Templates & Multi-Format Export [COMPLETED]
 **Goal**: Provide clean, campus-tested resume templates with instant export in styled PDF and editable DOCX formats.
-- [ ] **Task 9.1**: Design 3-4 clean, single-page fresher resume templates (Classic Tech, Modern Minimal, Data/Analytics, Campus Placement).
-- [ ] **Task 9.2**: Build ReportLab PDF generator pipeline rendering tailored resumes onto the chosen template.
-- [ ] **Task 9.3**: Build `python-docx` export generator producing clean, ATS-compliant Word documents without formatting traps.
-- [ ] **Task 9.4**: Connect client download modal supporting both PDF and DOCX exports for tailored resumes.
+- [x] **Task 9.1**: Design 3-4 clean, single-page fresher resume templates (Classic Tech, Modern Minimal, Data/Analytics, Campus Placement).
+- [x] **Task 9.2**: Build ReportLab PDF generator pipeline rendering tailored resumes onto the chosen template.
+- [x] **Task 9.3**: Build `python-docx` export generator producing clean, ATS-compliant Word documents without formatting traps.
+- [x] **Task 9.4**: Connect client download modal supporting both PDF and DOCX exports for tailored resumes.
 
 ### Phase 10: Student Micro-Pricing, UPI Razorpay & Viral Referrals
 **Goal**: Replace recurring monthly subscriptions with student-friendly micro-passes and viral referral mechanics.

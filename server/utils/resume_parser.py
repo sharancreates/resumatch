@@ -5,7 +5,7 @@ SECTION_HEADERS = {
     "skills": ["skills", "technical skills", "technologies", "proficiencies", "core competencies", "skills & tools", "technical proficiencies", "technical expertise", "expertise"],
     "experience": ["experience", "work experience", "employment history", "professional experience", "work history", "employment", "professional background", "career history"],
     "education": ["education", "academic background", "academic credentials", "degrees", "educational background", "academic history", "academic profile"],
-    "projects": ["projects", "academic projects", "personal projects", "selected projects", "key projects", "development projects"],
+    "projects": ["projects", "technical projects", "academic projects", "personal projects", "selected projects", "key projects", "development projects", "major projects", "mini projects", "software projects"],
     "coursework": ["relevant coursework", "coursework", "core subjects", "key courses", "academic courses", "courses"],
     "certifications": ["certifications", "certificates", "licenses & certifications", "credentials", "licenses and certifications"]
 }

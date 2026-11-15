@@ -3,6 +3,7 @@ import axios from 'axios';
 import FresherAuditPanel from './FresherAuditPanel';
 import BulletRewriterModal from './BulletRewriterModal';
 import JobTailorModal from './JobTailorModal';
+import ExportResumeModal from './ExportResumeModal';
 
 function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
   const [suggestions, setSuggestions] = useState([]);
@@ -12,6 +13,7 @@ function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
   const [mainView, setMainView] = useState('fresher');
   const [rewriterModalOpen, setRewriterModalOpen] = useState(false);
   const [tailorModalOpen, setTailorModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   useEffect(() => {
     if (!result || !result.id || !token || !isPremium) {
@@ -96,10 +98,10 @@ function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
       {/* Action Toolbar: PDF Download, AI Bullet Rewriter, and Job Tailor */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
         <button
-          onClick={handleDownloadPDF}
+          onClick={() => setExportModalOpen(true)}
           className="text-xs py-2.5 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition font-bold shadow-sm flex items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-700"
         >
-          <span>📥</span> Download PDF
+          <span>📥</span> Export Resume / PDF
         </button>
 
         <button
@@ -320,6 +322,16 @@ function ResultDisplay({ result, isPremium, handleUpgrade, token, API_URL }) {
         handleUpgrade={handleUpgrade}
         token={token}
         API_URL={API_URL}
+      />
+
+      {/* Fresher ATS Resume Template Export Modal */}
+      <ExportResumeModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        analysisId={result.id}
+        token={token}
+        API_URL={API_URL}
+        onDownloadReport={handleDownloadPDF}
       />
 
     </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import ExportResumeModal from './ExportResumeModal';
 
 export default function JobTailorModal({
   isOpen,
@@ -17,6 +18,7 @@ export default function JobTailorModal({
   const [tailoredData, setTailoredData] = useState(null);
   const [activeTab, setActiveTab] = useState('diff');
   const [copied, setCopied] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -207,7 +209,7 @@ export default function JobTailorModal({
             )}
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <button
                 onClick={handleCopyTailored}
                 className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-gray-700"
@@ -215,14 +217,30 @@ export default function JobTailorModal({
                 <span>{copied ? '✓' : '📋'}</span> {copied ? 'Copied Tailored Resume!' : 'Copy Tailored Text'}
               </button>
               <button
-                onClick={onClose}
-                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition"
+                onClick={() => setExportModalOpen(true)}
+                className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20"
               >
-                Done / Return to Scan
+                <span>📄</span> Export Resume
+              </button>
+              <button
+                onClick={onClose}
+                className="py-2.5 px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition border border-gray-700"
+              >
+                Done
               </button>
             </div>
           </div>
         )}
+
+        {/* Export Formatted Resume Modal */}
+        <ExportResumeModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          analysisId={analysisId}
+          resumeText={tailoredData?.tailored_text}
+          token={token}
+          API_URL={API_URL}
+        />
 
       </div>
     </div>
