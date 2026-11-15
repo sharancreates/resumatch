@@ -9,6 +9,16 @@ vi.mock('axios');
 describe('StudentPricingModal Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    axios.get.mockResolvedValue({
+      data: {
+        status: 'success',
+        referral_code: 'CAMPUS26',
+        share_url: 'https://resumatch.io/?ref=CAMPUS26',
+        total_referrals: 0,
+        pending_towards_next: 0,
+        days_earned: 0
+      }
+    });
   });
 
   it('does not render when isOpen is false', () => {

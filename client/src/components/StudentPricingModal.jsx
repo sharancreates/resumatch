@@ -92,7 +92,7 @@ export default function StudentPricingModal({
         const res = await axios.get(`${API_URL}/api/referrals/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.data?.status === 'success') {
+        if (res?.data?.status === 'success') {
           setReferralData(res.data);
         }
       } catch (err) {

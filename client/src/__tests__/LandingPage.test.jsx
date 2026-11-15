@@ -55,8 +55,8 @@ describe('LandingPage Component (Fresher Experience)', () => {
 
     // Student pricing
     expect(screen.getByText(/Student Pricing/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sprint Pass/i)).toBeInTheDocument();
-    expect(screen.getByText(/Placement Season/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Sprint Pass/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Placement Season/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it('triggers onLogin and onGetStarted callbacks on navigation clicks', () => {
