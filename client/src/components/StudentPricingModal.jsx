@@ -28,7 +28,7 @@ const PLANS = [
     period: "14 days access",
     description: "Unlimited power for active campus placement drives and walk-ins.",
     badge: "Most Popular",
-    badgeColor: "bg-indigo-900/60 text-indigo-300 border-indigo-500/40",
+    badgeColor: "bg-blue-900/60 text-blue-300 border-blue-500/40",
     features: [
       "Unlimited Resume Scans",
       "Grounded AI Bullet Rewriter",
@@ -223,7 +223,7 @@ export default function StudentPricingModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
       <div 
-        className="relative w-full max-w-4xl bg-[#0F172A] border border-indigo-500/30 rounded-3xl p-6 md:p-8 shadow-2xl text-white space-y-6 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-4xl bg-[#0D131F] border border-white/[0.08] rounded-2xl p-6 md:p-8 shadow-2xl text-white space-y-6 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -237,7 +237,7 @@ export default function StudentPricingModal({
 
         {/* Modal Header */}
         <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-950/70 border border-blue-500/30 text-blue-300 text-xs font-bold uppercase tracking-wider">
             <span>🎓</span> Student Micro-Pricing • No Recurring Traps
           </div>
           <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
@@ -248,12 +248,12 @@ export default function StudentPricingModal({
           </p>
 
           {/* Tab Switcher: Pricing vs Referral */}
-          <div className="inline-flex p-1 bg-gray-900 border border-gray-800 rounded-xl mt-3">
+          <div className="inline-flex p-1 bg-[#090D15] border border-white/[0.08] rounded-xl mt-3">
             <button
               onClick={() => setActiveTab('pricing')}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'pricing'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -263,7 +263,7 @@ export default function StudentPricingModal({
               onClick={() => setActiveTab('referral')}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'referral'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -293,12 +293,12 @@ export default function StudentPricingModal({
                   key={plan.id}
                   className={`rounded-2xl p-5 border flex flex-col justify-between transition relative ${
                     plan.highlight
-                      ? 'bg-gradient-to-b from-[#1E1B4B] to-[#0F172A] border-indigo-500 shadow-xl shadow-indigo-500/10 ring-2 ring-indigo-500/20'
-                      : 'bg-gray-900/60 border-gray-800 hover:border-gray-700'
+                      ? 'bg-[#0E1726] border-blue-500 shadow-xl shadow-blue-500/10 ring-2 ring-blue-500/20'
+                      : 'bg-[#090D15] border-white/[0.08] hover:border-white/[0.15]'
                   }`}
                 >
                     {plan.highlight && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-bold uppercase tracking-wider shadow">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider shadow">
                         Recommended for Drives
                       </div>
                     )}
@@ -312,7 +312,7 @@ export default function StudentPricingModal({
                       </div>
 
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-white">{plan.price}</span>
+                        <span className="text-3xl font-black text-white font-mono">{plan.price}</span>
                         <span className="text-xs text-gray-400">/ {plan.period}</span>
                       </div>
 
@@ -320,10 +320,10 @@ export default function StudentPricingModal({
                         {plan.description}
                       </p>
 
-                      <ul className="space-y-2 pt-2 border-t border-gray-800/80 text-xs text-gray-300">
+                      <ul className="space-y-2 pt-2 border-t border-white/[0.06] text-xs text-gray-300">
                         {plan.features.map((feat, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="text-indigo-400 font-bold">✓</span>
+                            <span className="text-blue-400 font-bold">✓</span>
                             <span>{feat}</span>
                           </li>
                         ))}
@@ -334,7 +334,7 @@ export default function StudentPricingModal({
                       {plan.id === 'free' ? (
                         <button
                           disabled
-                          className="w-full py-2.5 rounded-xl bg-gray-800/50 text-gray-500 text-xs font-bold cursor-default border border-gray-800"
+                          className="w-full py-2.5 rounded-xl bg-white/[0.04] text-gray-500 text-xs font-bold cursor-default border border-white/[0.06]"
                         >
                           {isPremium ? "Free Tier" : "Your Active Plan"}
                         </button>
@@ -344,8 +344,8 @@ export default function StudentPricingModal({
                           disabled={loadingPlan === plan.id}
                           className={`w-full py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md ${
                             plan.highlight
-                              ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/25'
-                              : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
+                              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/25'
+                              : 'bg-white/[0.06] hover:bg-white/[0.1] text-white border border-white/[0.08]'
                           }`}
                         >
                           {loadingPlan === plan.id ? (
@@ -376,17 +376,17 @@ export default function StudentPricingModal({
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-blue-950/30 border border-blue-800/40 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 text-xs">
                   <span className="text-2xl">🏛️</span>
                   <div>
-                    <div className="font-bold text-indigo-300">College Placement Cells & TPOs</div>
+                    <div className="font-bold text-blue-300">College Placement Cells & TPOs</div>
                     <div className="text-gray-400 text-[11px]">Bulk student passes available from ₹99/student.</div>
                   </div>
                 </div>
                 <a 
                   href="mailto:campus@resumatch.io?subject=Campus%20License%20Inquiry" 
-                  className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 underline whitespace-nowrap"
+                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline whitespace-nowrap"
                 >
                   Contact
                 </a>
@@ -398,8 +398,8 @@ export default function StudentPricingModal({
         {/* TAB 2: VIRAL REFERRAL ENGINE */}
         {activeTab === 'referral' && (
           <div className="space-y-6 max-w-xl mx-auto py-2">
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-950/40 via-indigo-950/30 to-gray-900 border border-purple-500/30 space-y-5 text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-3xl">
+            <div className="p-6 rounded-3xl bg-[#090D15] border border-white/[0.08] space-y-5 text-center">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-3xl">
                 🎁
               </div>
               
@@ -413,17 +413,17 @@ export default function StudentPricingModal({
               </div>
 
               {/* Progress Tracker */}
-              <div className="bg-gray-900/80 p-4 rounded-2xl border border-gray-800 space-y-3">
+              <div className="bg-[#06080E] p-4 rounded-2xl border border-white/[0.06] space-y-3">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-400">Current Milestone Progress</span>
-                  <span className="text-purple-300 font-bold">
+                  <span className="text-blue-300 font-bold font-mono">
                     {referralData ? referralData.pending_towards_next : 0} / 3 Friends
                   </span>
                 </div>
 
-                <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+                <div className="w-full h-2.5 bg-white/[0.06] rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 rounded-full"
+                    className="h-full bg-blue-500 transition-all duration-500 rounded-full"
                     style={{ width: `${Math.min(100, (((referralData?.pending_towards_next || 0) / 3) * 100))}%` }}
                   ></div>
                 </div>
@@ -444,11 +444,11 @@ export default function StudentPricingModal({
                     type="text"
                     readOnly
                     value={referralData?.share_url || `https://resumatch.io/?ref=${referralData?.referral_code || '...'}`}
-                    className="flex-1 bg-gray-900 border border-gray-700 px-3 py-2 rounded-xl text-xs font-mono text-gray-300 select-all"
+                    className="flex-1 bg-[#06080E] border border-white/[0.08] px-3 py-2 rounded-xl text-xs font-mono text-gray-300 select-all"
                   />
                   <button
                     onClick={handleCopyReferral}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                   >
                     <span>{copiedLink ? '✓' : '📋'}</span> {copiedLink ? 'Copied' : 'Copy'}
                   </button>

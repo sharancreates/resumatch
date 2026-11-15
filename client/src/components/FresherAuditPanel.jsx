@@ -58,9 +58,9 @@ export default function FresherAuditPanel({ audit }) {
     <div className="space-y-6">
       
       {/* 1. Header Overview & Score Ring */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-50/70 via-purple-50/40 to-white dark:from-indigo-950/30 dark:via-gray-800/50 dark:to-gray-900 border border-indigo-100 dark:border-indigo-500/20 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50/30 to-white dark:from-slate-900 dark:via-slate-800/50 dark:to-slate-900 border border-slate-200 dark:border-blue-500/20 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center sm:text-left">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border bg-white/80 dark:bg-gray-800 border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border bg-white/80 dark:bg-gray-800 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300">
             <span>🎓</span> Fresher Readiness Index
           </div>
           <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
@@ -102,7 +102,7 @@ export default function FresherAuditPanel({ audit }) {
           onClick={() => setActiveTab('overview')}
           className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
             activeTab === 'overview'
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -112,7 +112,7 @@ export default function FresherAuditPanel({ audit }) {
           onClick={() => setActiveTab('projects')}
           className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'projects'
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -122,7 +122,7 @@ export default function FresherAuditPanel({ audit }) {
           onClick={() => setActiveTab('verbs')}
           className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'verbs'
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -132,7 +132,7 @@ export default function FresherAuditPanel({ audit }) {
           onClick={() => setActiveTab('links')}
           className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'links'
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -142,7 +142,7 @@ export default function FresherAuditPanel({ audit }) {
           onClick={() => setActiveTab('layout')}
           className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === 'layout'
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
           }`}
         >
@@ -158,25 +158,25 @@ export default function FresherAuditPanel({ audit }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div 
               onClick={() => setActiveTab('projects')}
-              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 cursor-pointer transition text-center space-y-1"
+              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition text-center space-y-1"
             >
               <div className="text-[10px] font-bold text-gray-500 uppercase">Projects</div>
-              <div className="text-xl font-black text-indigo-600 dark:text-indigo-400">{projectQuality.score}%</div>
+              <div className="text-xl font-black text-blue-600 dark:text-blue-400">{projectQuality.score}%</div>
               <div className="text-[10px] text-gray-400">{projectQuality.projects_with_metrics} of {projectQuality.project_count} quantified</div>
             </div>
 
             <div 
               onClick={() => setActiveTab('verbs')}
-              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 cursor-pointer transition text-center space-y-1"
+              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition text-center space-y-1"
             >
               <div className="text-[10px] font-bold text-gray-500 uppercase">Action Verbs</div>
-              <div className="text-xl font-black text-purple-600 dark:text-purple-400">{actionVerbs.score}%</div>
+              <div className="text-xl font-black text-teal-600 dark:text-teal-400">{actionVerbs.score}%</div>
               <div className="text-[10px] text-gray-400">{actionVerbs.weak_phrases_count} passive phrases</div>
             </div>
 
             <div 
               onClick={() => setActiveTab('links')}
-              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 cursor-pointer transition text-center space-y-1"
+              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition text-center space-y-1"
             >
               <div className="text-[10px] font-bold text-gray-500 uppercase">Links & Proof</div>
               <div className="text-xl font-black text-blue-600 dark:text-blue-400">{linksSections.score}%</div>
@@ -185,7 +185,7 @@ export default function FresherAuditPanel({ audit }) {
 
             <div 
               onClick={() => setActiveTab('layout')}
-              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-indigo-400 cursor-pointer transition text-center space-y-1"
+              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-blue-400 cursor-pointer transition text-center space-y-1"
             >
               <div className="text-[10px] font-bold text-gray-500 uppercase">ATS Layout</div>
               <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">{atsLayout.score}%</div>
@@ -194,8 +194,8 @@ export default function FresherAuditPanel({ audit }) {
           </div>
 
           {quickWins.length > 0 && (
-            <div className="p-4 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+            <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
                 <span>💡</span> Quick Wins to Improve Your Score
               </span>
               <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1 pl-5 list-disc">
@@ -250,7 +250,7 @@ export default function FresherAuditPanel({ audit }) {
                     <div className="flex flex-wrap gap-1.5 items-center">
                       <span className="text-[10px] font-bold text-gray-400">Stack:</span>
                       {proj.tech_stack.map((t, tIdx) => (
-                        <span key={tIdx} className="text-[10px] font-mono px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded border border-indigo-200/50 dark:border-indigo-800/50">
+                        <span key={tIdx} className="text-[10px] font-mono px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded border border-blue-200/50 dark:border-blue-800/50">
                           {t}
                         </span>
                       ))}
@@ -393,7 +393,7 @@ export default function FresherAuditPanel({ audit }) {
           <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-3">
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-gray-700 dark:text-gray-300">Word Count & Length Check:</span>
-              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+              <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
                 {atsLayout.word_count} words (Target: 350–600 words)
               </span>
             </div>

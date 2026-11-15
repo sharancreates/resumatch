@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import ScrollReveal from './ScrollReveal';
 import ScorecardModal from './ScorecardModal';
 
 export default function LandingPage({ onGetStarted, onLogin }) {
@@ -112,104 +111,109 @@ export default function LandingPage({ onGetStarted, onLogin }) {
   ];
 
   const getScoreBadge = (score) => {
-    if (score >= 80) return { text: "✓ Placement Ready", color: "text-emerald-400 bg-emerald-950/40 border-emerald-500/30" };
-    if (score >= 60) return { text: "⚠ Needs Minor Polish", color: "text-amber-400 bg-amber-950/40 border-amber-500/30" };
-    return { text: "✕ High Rejection Risk", color: "text-rose-400 bg-rose-950/40 border-rose-500/30" };
+    if (score >= 80) return { text: "✓ Placement Ready", color: "text-emerald-400 bg-emerald-950/60 border-emerald-500/40" };
+    if (score >= 60) return { text: "⚠ Needs Minor Polish", color: "text-amber-400 bg-amber-950/60 border-amber-500/40" };
+    return { text: "✕ High Rejection Risk", color: "text-rose-400 bg-rose-950/60 border-rose-500/40" };
   };
 
   return (
-    <div className="bg-[#0B0F19] text-gray-100 min-h-screen overflow-x-hidden font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Background Decorative Glows */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none"></div>
-      <div className="absolute top-[30%] right-[-10%] w-[55%] h-[65%] rounded-full bg-purple-900/10 blur-[130px] pointer-events-none"></div>
+    <div className="bg-[#080B11] text-gray-100 min-h-screen overflow-x-hidden font-sans selection:bg-blue-600 selection:text-white">
+      
+      {/* Precision Top Glow Effect */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[340px] bg-gradient-to-b from-blue-600/15 via-blue-900/5 to-transparent blur-[120px] pointer-events-none" />
 
-      {/* NAVBAR */}
-      <header className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between relative z-10">
+      {/* 1. NAVBAR */}
+      <header className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative z-20 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md shadow-blue-500/30">
             RM
           </div>
-          <div>
-            <span className="text-lg font-black tracking-tight text-white">ResuMatch <span className="text-indigo-400 text-xs uppercase px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-500/30">Freshers</span></span>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-black tracking-tight text-white">ResuMatch</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-950/80 text-blue-400 border border-blue-500/30">
+              Freshers
+            </span>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-gray-400">
+        <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-gray-400">
           <a href="#scanner" className="hover:text-white transition">Free Scanner</a>
           <a href="#features" className="hover:text-white transition">Why Freshers Love Us</a>
           <a href="#pricing" className="hover:text-white transition">Student Pricing</a>
           <a href="#faq" className="hover:text-white transition">FAQ</a>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button 
             onClick={onLogin}
-            className="text-xs font-bold text-gray-300 hover:text-white transition px-3 py-1.5"
+            className="text-xs font-semibold text-gray-300 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/[0.04]"
           >
             Sign In
           </button>
           <button 
             onClick={onGetStarted}
-            className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20"
+            className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition px-4 py-2 rounded-lg shadow-sm shadow-blue-600/30"
           >
             Create Account
           </button>
         </div>
       </header>
 
-      {/* HERO SECTION */}
-      <section className="max-w-7xl mx-auto px-6 pt-12 pb-16 relative z-10 text-center space-y-6">
-        <ScrollReveal delay={100}>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
-            <span>🎓</span> Built for 2024–2026 Campus Drives & First Jobs in India
-          </div>
-        </ScrollReveal>
+      {/* 2. HERO SECTION */}
+      <section className="max-w-7xl mx-auto px-6 pt-14 pb-20 relative z-10 text-center space-y-6">
+        {/* Notice Pill */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-950/60 border border-blue-500/30 text-blue-300 text-xs font-semibold">
+          <span>🎓</span> Built for 2024–2026 Campus Drives & First Jobs in India
+        </div>
         
-        <ScrollReveal delay={200}>
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.15] text-white max-w-4xl mx-auto">
-            Upload your resume, paste a job. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-indigo-200 to-purple-400">
-              Get a better resume in 2 minutes.
-            </span>
-          </h1>
-        </ScrollReveal>
+        {/* Main Category Headline */}
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.12] text-white max-w-4xl mx-auto">
+          Upload your resume, paste a job. <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-teal-300">
+            Get a better resume in 2 minutes.
+          </span>
+        </h1>
 
-        <ScrollReveal delay={300}>
-          <p className="text-base sm:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
-            Built for freshers, priced for students. Stop getting filtered out by campus bots. Check missing tech skills, weak project bullets, and ATS layout traps before you apply.
-          </p>
-        </ScrollReveal>
+        {/* Value Lead */}
+        <p className="text-sm sm:text-base text-gray-300 max-w-2xl mx-auto leading-relaxed">
+          Built for freshers, priced for students. Stop getting filtered out by campus bots. Check missing tech skills, weak project bullets, and ATS layout traps before you apply.
+        </p>
       </section>
 
-      {/* LIVE NO-SIGNUP SCANNER WIDGET */}
+      {/* 3. CENTRED APP WINDOW (THE HERO WORK) */}
       <section id="scanner" className="max-w-5xl mx-auto px-6 pb-24 relative z-10">
-        <ScrollReveal delay={350}>
-          <div className="bg-[#111827]/80 border border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-800 gap-2">
-              <div>
-                <h2 className="text-lg font-black text-white flex items-center gap-2">
-                  <span>⚡</span> Instant Free Scan (No Signup Required)
-                </h2>
-                <p className="text-xs text-gray-400">Paste your resume & target job description to get your match score instantly.</p>
-              </div>
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-950/60 border border-indigo-500/20 text-indigo-300 text-xs font-bold self-start sm:self-auto">
-                {scansRemaining} of 3 Free Scans Remaining
-              </div>
+        <div className="bg-[#0D131F] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden">
+          
+          {/* macOS / IDE Terminal Header Bar */}
+          <div className="bg-[#090D15] px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]/80"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/80"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]/80"></span>
+              <span className="text-xs font-bold text-gray-300 ml-2">
+                ⚡ Instant Free Scan (No Signup Required)
+              </span>
             </div>
+            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-950/60 border border-blue-500/30 text-blue-300 text-[11px] font-mono font-semibold">
+              {scansRemaining} of 3 Free Scans Remaining
+            </div>
+          </div>
 
+          <div className="p-6 sm:p-8 space-y-6">
             {scanError && (
-              <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs font-semibold">
+              <div className="p-3.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-medium">
                 ⚠️ {scanError}
               </div>
             )}
 
             <form onSubmit={runLiveScan} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Resume Input Area */}
+                
+                {/* 1. Resume Input Panel */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-gray-300">1. Your Resume</label>
-                    <label className="text-[11px] text-indigo-400 hover:text-indigo-300 cursor-pointer font-semibold">
+                    <label className="text-xs font-bold text-gray-200">1. Your Resume</label>
+                    <label className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-semibold flex items-center gap-1 transition">
                       <span>📁 Upload PDF / DOCX</span>
                       <input 
                         type="file" 
@@ -220,7 +224,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                     </label>
                   </div>
                   {selectedFile && (
-                    <div className="text-[11px] text-gray-400 font-mono truncate bg-gray-900/60 px-2 py-1 rounded border border-gray-800">
+                    <div className="text-[11px] text-gray-400 font-mono truncate bg-[#080B11] px-2.5 py-1 rounded-md border border-white/[0.08]">
                       📄 {selectedFile.name}
                     </div>
                   )}
@@ -229,31 +233,32 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                     value={resumeText}
                     onChange={(e) => setResumeText(e.target.value)}
                     placeholder="Paste your resume text here (or upload a PDF/DOCX file)..."
-                    className="w-full bg-[#0B0F19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 font-mono transition"
+                    className="w-full bg-[#080B11] border border-white/[0.08] rounded-xl p-3.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500 font-mono transition resize-none leading-relaxed"
                   />
                 </div>
 
-                {/* Job Description Input Area */}
+                {/* 2. Target Job Description Panel */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300">2. Target Job Description</label>
+                  <label className="text-xs font-bold text-gray-200">2. Target Job Description</label>
                   <textarea
                     rows={8}
                     value={jobText}
                     onChange={(e) => setJobText(e.target.value)}
                     placeholder="Paste the job requirements from LinkedIn, Internshala, or campus placement drive..."
-                    className="w-full bg-[#0B0F19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 font-mono transition"
+                    className="w-full bg-[#080B11] border border-white/[0.08] rounded-xl p-3.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500 font-mono transition resize-none leading-relaxed"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+              {/* Action Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-white/[0.06]">
                 <span className="text-[11px] text-gray-400">
                   🔒 We never train AI models on your resume or share your data.
                 </span>
                 <button
                   type="submit"
                   disabled={scanning}
-                  className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/30 transition transform active:scale-95 disabled:opacity-50"
+                  className="w-full sm:w-auto px-7 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-md shadow-blue-600/25 transition disabled:opacity-50"
                 >
                   {scanning ? 'Analyzing Resume & JD...' : 'Run Free Scan ⚡'}
                 </button>
@@ -262,13 +267,12 @@ export default function LandingPage({ onGetStarted, onLogin }) {
 
             {/* REAL SCAN RESULT CARD */}
             {scanResult && (
-              <div className="mt-8 pt-6 border-t border-gray-800 space-y-6 animate-fadeIn">
-                <div className="p-5 rounded-2xl bg-[#0F172A] border border-indigo-500/40 grid grid-cols-1 md:grid-cols-12 gap-6 items-center shadow-xl">
+              <div className="mt-8 pt-6 border-t border-white/[0.08] space-y-6 animate-fadeIn">
+                <div className="p-5 rounded-xl bg-[#090D15] border border-white/[0.08] grid grid-cols-1 md:grid-cols-12 gap-6 items-center shadow-lg">
+                  
                   {/* Score Dial */}
-                  <div className="md:col-span-4 flex flex-col items-center justify-center text-center space-y-2 border-b md:border-b-0 md:border-r border-gray-800 pb-4 md:pb-0">
-                    <div className="relative w-28 h-28 flex items-center justify-center">
-                      <div className="text-4xl font-black text-white">{scanResult.score}%</div>
-                    </div>
+                  <div className="md:col-span-4 flex flex-col items-center justify-center text-center space-y-2 border-b md:border-b-0 md:border-r border-white/[0.06] pb-4 md:pb-0">
+                    <div className="text-4xl font-black text-white font-mono">{scanResult.score}%</div>
                     <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${getScoreBadge(scanResult.score).color}`}>
                       {getScoreBadge(scanResult.score).text}
                     </span>
@@ -279,24 +283,24 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs text-gray-300">
                         <span>Exact Keywords Overlap (40% weight):</span>
-                        <span className="font-bold text-indigo-400">{scanResult.breakdown?.lexical}%</span>
+                        <span className="font-bold text-blue-400 font-mono">{scanResult.breakdown?.lexical}%</span>
                       </div>
-                      <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                        <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${scanResult.breakdown?.lexical}%` }}></div>
+                      <div className="w-full bg-white/[0.06] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${scanResult.breakdown?.lexical}%` }}></div>
                       </div>
 
                       <div className="flex justify-between text-xs text-gray-300 pt-1">
                         <span>Semantic Context & Meaning (60% weight):</span>
-                        <span className="font-bold text-purple-400">{scanResult.breakdown?.semantic}%</span>
+                        <span className="font-bold text-teal-400 font-mono">{scanResult.breakdown?.semantic}%</span>
                       </div>
-                      <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                        <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scanResult.breakdown?.semantic}%` }}></div>
+                      <div className="w-full bg-white/[0.06] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${scanResult.breakdown?.semantic}%` }}></div>
                       </div>
                     </div>
 
                     {/* Top 3 Missing Gaps */}
                     {scanResult.top_missing_skills?.length > 0 && (
-                      <div className="space-y-1.5 pt-2 border-t border-gray-800/80">
+                      <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
                         <div className="text-xs font-bold text-amber-400 flex items-center justify-between">
                           <span>Top Missing Tech Skills to Add:</span>
                           <span className="text-[10px] text-gray-400 font-normal">
@@ -315,9 +319,9 @@ export default function LandingPage({ onGetStarted, onLogin }) {
 
                     {/* Fresher Readiness & Quick Fix Preview */}
                     {scanResult.fresher_audit && (
-                      <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 space-y-1.5">
+                      <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/20 space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                          <span className="font-bold text-blue-300 flex items-center gap-1.5">
                             <span>🎓</span> Fresher Readiness: {scanResult.fresher_audit.fresher_score}% ({scanResult.fresher_audit.readiness_verdict})
                           </span>
                         </div>
@@ -339,7 +343,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                       </button>
                       <button
                         onClick={onGetStarted}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition"
                       >
                         Unlock Full AI Bullet Rewriter →
                       </button>
@@ -349,88 +353,131 @@ export default function LandingPage({ onGetStarted, onLogin }) {
               </div>
             )}
           </div>
-        </ScrollReveal>
-      </section>
-
-      {/* FRESHER-FOCUSED FEATURES */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-900 relative z-10">
-        <ScrollReveal>
-          <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-            <h2 className="text-3xl font-black text-white">Why Freshers Love ResuMatch</h2>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              We look past corporate years of experience and grade what fresh graduates actually have: projects, coursework, and core skills.
-            </p>
-          </div>
-        </ScrollReveal>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <ScrollReveal delay={100}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
-                🎯
-              </div>
-              <h3 className="text-sm font-bold text-white">Campus ATS Scanner</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                40% exact keyword match + 60% semantic similarity so campus recruitment bots don't discard your application.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={200}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
-                🛠
-              </div>
-              <h3 className="text-sm font-bold text-white">Project Quality Checker</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Audits your college projects for explicit tech stacks, your personal role, and measurable outcomes.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={300}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
-                ✍️
-              </div>
-              <h3 className="text-sm font-bold text-white">Weak Verb Detector</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Flags passive language ("worked on", "assisted") and turns them into strong action verbs ("architected", "built").
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={400}>
-            <div className="bg-[#111827]/40 border border-gray-800 p-6 rounded-2xl hover:border-indigo-500/30 transition space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-500/20 flex items-center justify-center text-lg text-indigo-400">
-                📄
-              </div>
-              <h3 className="text-sm font-bold text-white">1-Page ATS Safe Layout</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Catches formatting traps like tables, photos, or multi-columns that break Indian hiring portals.
-              </p>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 
-      {/* STUDENT PRICING SECTION */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-900 relative z-10">
-        <ScrollReveal>
-          <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-            <h2 className="text-3xl font-black text-white">Priced for Students, Not US Executives</h2>
+      {/* 4. 4-PILLAR FRESHER-FOCUSED FEATURES */}
+      <section id="features" className="max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.06] relative z-10">
+        <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
+          <h2 className="text-3xl font-black text-white">Why Freshers Love ResuMatch</h2>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            We look past corporate years of experience and grade what fresh graduates actually have: projects, coursework, and core skills.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-[#0D131F] border border-white/[0.08] p-6 rounded-2xl hover:border-blue-500/40 transition space-y-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-950/80 border border-blue-500/30 flex items-center justify-center text-lg text-blue-400">
+              🎯
+            </div>
+            <h3 className="text-sm font-bold text-white">Campus ATS Scanner</h3>
             <p className="text-xs text-gray-400 leading-relaxed">
-              No expensive recurring monthly subscriptions. Grab a micro-pass when your placement season starts.
+              40% exact keyword match + 60% semantic similarity so campus recruitment bots don't discard your application.
             </p>
           </div>
-        </ScrollReveal>
+
+          <div className="bg-[#0D131F] border border-white/[0.08] p-6 rounded-2xl hover:border-blue-500/40 transition space-y-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-950/80 border border-blue-500/30 flex items-center justify-center text-lg text-blue-400">
+              🛠
+            </div>
+            <h3 className="text-sm font-bold text-white">Project Quality Checker</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Audits your college projects for explicit tech stacks, your personal role, and measurable outcomes.
+            </p>
+          </div>
+
+          <div className="bg-[#0D131F] border border-white/[0.08] p-6 rounded-2xl hover:border-blue-500/40 transition space-y-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-950/80 border border-blue-500/30 flex items-center justify-center text-lg text-blue-400">
+              ✍️
+            </div>
+            <h3 className="text-sm font-bold text-white">Weak Verb Detector</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Flags passive language ("worked on", "assisted") and turns them into strong action verbs ("architected", "built").
+            </p>
+          </div>
+
+          <div className="bg-[#0D131F] border border-white/[0.08] p-6 rounded-2xl hover:border-blue-500/40 transition space-y-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-950/80 border border-blue-500/30 flex items-center justify-center text-lg text-blue-400">
+              📄
+            </div>
+            <h3 className="text-sm font-bold text-white">1-Page ATS Safe Layout</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Catches formatting traps like tables, photos, or multi-columns that break Indian hiring portals.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. DEALT MOMENT: LIVE BULLET POINT TRANSFORMATION */}
+      <section className="max-w-5xl mx-auto px-6 py-16 border-t border-white/[0.06]">
+        <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">The ResuMatch Difference</span>
+          <h3 className="text-2xl font-black text-white">From Campus Rejection to First-Round Shortlist</h3>
+          <p className="text-xs text-gray-400">See how grounded AI re-anchors weak college project descriptions.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          {/* Weak Bullet Card */}
+          <div className="p-6 rounded-2xl bg-[#090D15] border border-rose-500/20 space-y-4 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                  <span>✕</span> Typical Student Resume Bullet
+                </span>
+                <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/40 px-2.5 py-0.5 rounded border border-rose-500/30">
+                  42% Match
+                </span>
+              </div>
+              <p className="text-xs font-mono text-gray-300 leading-relaxed bg-[#06080E] p-3 rounded-lg border border-white/[0.04]">
+                "worked on python backend for university project and fixed bugs"
+              </p>
+            </div>
+            <ul className="text-[11px] text-rose-300/80 space-y-1.5 pt-3 border-t border-white/[0.04]">
+              <li>• Passive action verb ("worked on") lacks confidence</li>
+              <li>• Missing quantifiable metrics or performance scale</li>
+              <li>• Unspecified framework, database, or architecture</li>
+            </ul>
+          </div>
+
+          {/* Optimized Bullet Card */}
+          <div className="p-6 rounded-2xl bg-[#0D1524] border border-blue-500/30 space-y-4 flex flex-col justify-between shadow-lg shadow-blue-500/10">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span>✓</span> Grounded AI Optimization
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-0.5 rounded border border-emerald-500/30">
+                  94% Match
+                </span>
+              </div>
+              <p className="text-xs font-mono text-gray-200 leading-relaxed bg-[#060A12] p-3 rounded-lg border border-blue-500/20">
+                "Architected distributed task queue in Python, Redis & FastAPI, reducing job latency by 42% across 25,000 tasks/min"
+              </p>
+            </div>
+            <ul className="text-[11px] text-emerald-300/80 space-y-1.5 pt-3 border-t border-white/[0.04]">
+              <li>✓ Assertive engineering verb ("Architected")</li>
+              <li>✓ Quantified impact metrics: 42% latency, 25k tasks/min</li>
+              <li>✓ Explicit high-demand tech stack: Python, Redis, FastAPI</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. STUDENT PRICING SECTION */}
+      <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 border-t border-white/[0.06] relative z-10">
+        <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
+          <h2 className="text-3xl font-black text-white">Priced for Students, Not US Executives</h2>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            No expensive recurring monthly subscriptions. Grab a micro-pass when your placement season starts.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {/* Free Tier */}
-          <div className="bg-[#111827]/50 border border-gray-800 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+          <div className="bg-[#0D131F] border border-white/[0.08] p-8 rounded-2xl space-y-6 flex flex-col justify-between hover:border-white/[0.15] transition">
             <div className="space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Free Tier</span>
-              <div className="text-3xl font-black text-white">₹0</div>
+              <div className="text-3xl font-black text-white font-mono">₹0</div>
               <p className="text-xs text-gray-400">Get your baseline score and top skill gaps before campus tests.</p>
               <ul className="text-xs space-y-2.5 text-gray-300">
                 <li className="flex items-center gap-2">✓ 3 full ATS scans (no signup needed)</li>
@@ -444,20 +491,20 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                 const el = document.getElementById('scanner');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl text-xs transition"
+              className="w-full py-3 bg-white/[0.06] hover:bg-white/[0.1] text-white font-bold rounded-xl text-xs transition"
             >
               Start Free Scan
             </button>
           </div>
 
           {/* Sprint Pass */}
-          <div className="bg-[#1E1B4B]/50 border-2 border-indigo-500 p-8 rounded-3xl space-y-6 flex flex-col justify-between relative shadow-2xl">
-            <div className="absolute top-[-12px] left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow">
+          <div className="bg-[#0E1726] border-2 border-blue-500 p-8 rounded-2xl space-y-6 flex flex-col justify-between relative shadow-xl shadow-blue-500/10">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider shadow">
               ⚡ Most Popular for Campus Drives
             </div>
             <div className="space-y-4 pt-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Sprint Pass</span>
-              <div className="text-3xl font-black text-white">₹199 <span className="text-xs font-normal text-gray-400">/ 14 days</span></div>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Sprint Pass</span>
+              <div className="text-3xl font-black text-white font-mono">₹199 <span className="text-xs font-normal text-gray-400">/ 14 days</span></div>
               <p className="text-xs text-gray-300">Perfect for an active 2-week campus drive or internship rush.</p>
               <ul className="text-xs space-y-2.5 text-gray-200">
                 <li className="flex items-center gap-2">✓ <strong>Unlimited</strong> resume & JD scans</li>
@@ -469,17 +516,17 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             </div>
             <button 
               onClick={onGetStarted}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-indigo-600/30"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-md shadow-blue-600/30"
             >
               Get Sprint Pass (₹199)
             </button>
           </div>
 
           {/* Placement Season */}
-          <div className="bg-[#111827]/50 border border-gray-800 p-8 rounded-3xl space-y-6 flex flex-col justify-between">
+          <div className="bg-[#0D131F] border border-white/[0.08] p-8 rounded-2xl space-y-6 flex flex-col justify-between hover:border-white/[0.15] transition">
             <div className="space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Placement Season</span>
-              <div className="text-3xl font-black text-white">₹499 <span className="text-xs font-normal text-gray-400">/ 3 months</span></div>
+              <div className="text-3xl font-black text-white font-mono">₹499 <span className="text-xs font-normal text-gray-400">/ 3 months</span></div>
               <p className="text-xs text-gray-400">For students navigating the entire 3-month placement cycle.</p>
               <ul className="text-xs space-y-2.5 text-gray-300">
                 <li className="flex items-center gap-2">✓ Everything in Sprint Pass</li>
@@ -490,7 +537,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             </div>
             <button 
               onClick={onGetStarted}
-              className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl text-xs transition"
+              className="w-full py-3 bg-white/[0.06] hover:bg-white/[0.1] text-white font-bold rounded-xl text-xs transition"
             >
               Get Placement Pass (₹499)
             </button>
@@ -498,9 +545,9 @@ export default function LandingPage({ onGetStarted, onLogin }) {
         </div>
       </section>
 
-      {/* STUDENT PRIVACY TRUST BANNER */}
+      {/* 7. STUDENT PRIVACY TRUST BANNER */}
       <section className="max-w-5xl mx-auto px-6 py-12">
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-950/40 to-purple-950/40 border border-indigo-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div className="p-6 rounded-2xl bg-[#0D131F] border border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="space-y-1">
             <h4 className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">
               <span>🛡️</span> 100% Student Data Privacy Pledge (DPDP Act)
@@ -509,33 +556,31 @@ export default function LandingPage({ onGetStarted, onLogin }) {
               We never train AI models on your resumes, never sell student data, and provide 1-click data deletion.
             </p>
           </div>
-          <span className="text-[11px] font-bold text-indigo-300 bg-indigo-950/80 px-3 py-1.5 rounded-full border border-indigo-500/30 whitespace-nowrap">
+          <span className="text-[11px] font-bold text-blue-400 bg-blue-950/80 px-3 py-1.5 rounded-full border border-blue-500/30 whitespace-nowrap">
             Encrypted & Private
           </span>
         </div>
       </section>
 
-      {/* FAQ SECTION */}
-      <section id="faq" className="max-w-3xl mx-auto px-6 py-20 border-t border-gray-900 relative z-10">
-        <ScrollReveal>
-          <div className="text-center mb-12 space-y-2">
-            <h2 className="text-2xl font-black text-white">Frequently Asked Questions</h2>
-            <p className="text-xs text-gray-400">Honest answers for students and campus applicants.</p>
-          </div>
-        </ScrollReveal>
+      {/* 8. FAQ SECTION */}
+      <section id="faq" className="max-w-3xl mx-auto px-6 py-20 border-t border-white/[0.06] relative z-10">
+        <div className="text-center mb-12 space-y-2">
+          <h2 className="text-2xl font-black text-white">Frequently Asked Questions</h2>
+          <p className="text-xs text-gray-400">Honest answers for students and campus applicants.</p>
+        </div>
 
         <div className="space-y-4">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="border border-gray-800 rounded-2xl overflow-hidden bg-[#111827]/40">
+            <div key={idx} className="border border-white/[0.08] rounded-xl overflow-hidden bg-[#0D131F]">
               <button
                 onClick={() => toggleFaq(idx)}
                 className="w-full p-5 text-left text-xs font-bold text-gray-200 hover:text-white flex items-center justify-between transition"
               >
                 <span>{faq.q}</span>
-                <span className="text-indigo-400">{activeFaq === idx ? '−' : '+'}</span>
+                <span className="text-blue-400 font-mono">{activeFaq === idx ? '−' : '+'}</span>
               </button>
               {activeFaq === idx && (
-                <div className="px-5 pb-5 text-xs text-gray-400 leading-relaxed border-t border-gray-800/50 pt-3">
+                <div className="px-5 pb-5 text-xs text-gray-400 leading-relaxed border-t border-white/[0.06] pt-3">
                   {faq.a}
                 </div>
               )}
@@ -544,9 +589,12 @@ export default function LandingPage({ onGetStarted, onLogin }) {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-gray-900 py-8 text-center text-xs text-gray-600">
+      {/* 9. FOOTER */}
+      <footer className="border-t border-white/[0.06] py-8 text-center text-xs text-gray-500 space-y-2">
         <p>© 2026 ResuMatch AI — Built for freshers in India. All rights reserved.</p>
+        <p className="text-[11px] text-gray-600">
+          College placement cells & TPOs: contact <a href="mailto:campus@resumatch.io" className="text-blue-400 hover:underline">campus@resumatch.io</a> for institutional campus keys.
+        </p>
       </footer>
 
       {/* SCORECARD MODAL */}
